@@ -1,0 +1,19 @@
+{
+  "name": "liusir-skills",
+  "description": "Liusir skill collection for content, research, and workflow automation.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Frank"
+  },
+  "homepage": "https://github.com/your-org/liusir-skills",
+  "repository": "https://github.com/your-org/liusir-skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "agents",
+    "content",
+    "research",
+    "automation"
+  ]
+}
+

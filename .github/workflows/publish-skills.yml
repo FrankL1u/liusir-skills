@@ -1,0 +1,47 @@
+name: Publish Skills
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "skills/**"
+      - "shared/**"
+      - "scripts/**"
+      - ".github/workflows/publish-skills.yml"
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: "Specific skill to publish"
+        required: false
+        type: string
+      force:
+        description: "Force publish even if version is unchanged"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install ClawHub CLI
+        run: npm install -g clawhub
+
+      - name: Publish changed skills
+        run: bash scripts/ci-publish.sh
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+          PUBLISH_SKILL: ${{ github.event.inputs.skill || '' }}
+          PUBLISH_FORCE: ${{ github.event.inputs.force || 'false' }}
+
