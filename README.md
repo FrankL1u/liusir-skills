@@ -15,13 +15,13 @@ This repository currently focuses on WeChat Official Account writing: drafting, 
 ### Install a specific skill
 
 ```bash
-npx skills add <your-org>/LS-SKILLS --skill ls-wechat-article
+npx skills add FrankL1u/liusir-skills --skill ls-wechat-article
 ```
 
 ### See available skills
 
 ```bash
-npx skills add <your-org>/LS-SKILLS --list
+npx skills add FrankL1u/liusir-skills --list
 ```
 
 ### Install from a marketplace plugin
