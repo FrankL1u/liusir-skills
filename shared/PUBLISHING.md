@@ -1,6 +1,6 @@
 # Publishing Guide
 
-This document describes how to publish YouMind skills to [ClawHub](https://clawhub.ai) and keep them updated.
+This document describes how to publish skills from this repository to [ClawHub](https://clawhub.ai) and keep them updated.
 
 ## Overview
 
@@ -17,7 +17,7 @@ Each skill in the `skills/` directory is published independently to ClawHub. **P
 
 ```yaml
 ---
-name: youmind-my-skill
+name: ls-my-skill
 version: 1.2.0  # ← bump this
 description: |
   ...
@@ -61,7 +61,7 @@ If CI fails or you need to publish without merging, use the manual flow below.
 
 Example:
 ```bash
-./scripts/publish-skill.sh youmind-yt-transcript --version 1.0.0 --changelog "Initial release"
+./scripts/publish-skill.sh ls-my-skill --version 1.0.0 --changelog "Initial release"
 ```
 
 ### Manual publish
@@ -69,7 +69,7 @@ Example:
 ```bash
 # 1. Create a clean temp directory with only publishable files
 TMP_DIR=$(mktemp -d)
-SKILL_DIR="skills/youmind-yt-transcript"
+SKILL_DIR="skills/ls-my-skill"
 
 cp "$SKILL_DIR/SKILL.md" "$TMP_DIR/"
 [ -f "$SKILL_DIR/package.json" ] && cp "$SKILL_DIR/package.json" "$TMP_DIR/"
@@ -79,8 +79,8 @@ cp "$SKILL_DIR/SKILL.md" "$TMP_DIR/"
 
 # 2. Publish
 clawhub publish "$TMP_DIR" \
-  --slug youmind-yt-transcript \
-  --name "YouMind YouTube Transcript" \
+  --slug ls-my-skill \
+  --name "LS My Skill" \
   --version 1.0.0 \
   --changelog "Initial release"
 
@@ -121,10 +121,10 @@ This script:
 
 ```bash
 # Check what's on ClawHub
-clawhub list | grep youmind
+clawhub list | grep ls-
 
 # Check a specific skill
-npx clawhub@latest inspect youmind-yt-transcript --json
+npx clawhub@latest inspect ls-my-skill --json
 ```
 
 ## Installation Channels
@@ -134,18 +134,18 @@ Users can install skills via two channels:
 ### 1. skills.sh (GitHub-based)
 ```bash
 # Install a specific skill
-npx skills add YouMind-OpenLab/skills --skill youmind-yt-transcript
+npx skills add <your-org>/LS-SKILLS --skill ls-my-skill
 
 # List all available skills
-npx skills add YouMind-OpenLab/skills --list
+npx skills add <your-org>/LS-SKILLS --list
 
 # Install all skills
-npx skills add YouMind-OpenLab/skills --all
+npx skills add <your-org>/LS-SKILLS --all
 ```
 
 ### 2. ClawHub
 ```bash
-clawhub install youmind-yt-transcript
+clawhub install ls-my-skill
 ```
 
 Both channels are maintained in parallel. GitHub is always the source of truth.

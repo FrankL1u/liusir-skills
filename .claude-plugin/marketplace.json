@@ -5,16 +5,18 @@
   },
   "metadata": {
     "description": "Liusir skill collection for content, research, and workflow automation.",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "liusir-skills",
       "description": "Install the full Liusir skill collection as one plugin.",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "source": "./",
       "strict": true,
-      "skills": []
+      "skills": [
+        "./skills/ls-wechat-article"
+      ]
     }
   ]
 }

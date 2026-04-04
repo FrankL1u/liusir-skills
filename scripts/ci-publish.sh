@@ -11,11 +11,10 @@ set -euo pipefail
 # Env vars:
 #   PUBLISH_SKILL  — skill slug to publish (manual mode). Empty = auto mode.
 #   PUBLISH_FORCE  — "true" to skip version check (manual mode only).
-#   CLAWHUB_TOKEN  — token for DophinL account (legacy skills)
-#   YOUMIND_CLAWHUB_TOKEN — token for mindy-youmind account (new skills)
+#   CLAWHUB_TOKEN  — token used to publish changed skills
 #
 # Version source: SKILL.md frontmatter `version:` field.
-# If version is missing, the skill is skipped with a warning.
+# Marketplace version is managed separately for the whole repository/plugin.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
@@ -23,26 +22,9 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 PUBLISH_SKILL="${PUBLISH_SKILL:-}"
 PUBLISH_FORCE="${PUBLISH_FORCE:-false}"
 
-# ── Token routing ──
-# Skills owned by DophinL (legacy) use CLAWHUB_TOKEN
-# Skills owned by mindy-youmind (new/org) use YOUMIND_CLAWHUB_TOKEN
-# Skills owned by p697 are skipped (no token available)
-
-DOPHINL_SKILLS="youmind-blog-cover youmind-deep-research youmind-image-generator youmind-slides-generator youmind-web-clipper youmind-youtube-transcript"
-P697_SKILLS="youmind"
-
 get_token_for_skill() {
   local skill="$1"
-  if echo "$P697_SKILLS" | grep -qw "$skill"; then
-    echo ""  # No token for p697-owned skills
-    return
-  fi
-  if echo "$DOPHINL_SKILLS" | grep -qw "$skill"; then
-    echo "${CLAWHUB_TOKEN:-}"
-    return
-  fi
-  # Everything else (new skills) → YouMind org token
-  echo "${YOUMIND_CLAWHUB_TOKEN:-}"
+  echo "${CLAWHUB_TOKEN:-}"
 }
 
 # ── Determine which skills to publish ──

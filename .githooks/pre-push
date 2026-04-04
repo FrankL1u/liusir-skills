@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+echo "[pre-push] validating skill repository structure..."
+
+for dir in skills/*; do
+  [ -d "$dir" ] || continue
+
+  if [[ ! -f "$dir/SKILL.md" ]]; then
+    echo "[pre-push] missing SKILL.md: $dir" >&2
+    exit 1
+  fi
+
+  if [[ ! -f "$dir/.clawhubignore" ]]; then
+    echo "[pre-push] missing .clawhubignore: $dir" >&2
+    exit 1
+  fi
+
+  if ! grep -q '^version:' "$dir/SKILL.md"; then
+    echo "[pre-push] missing version: in $dir/SKILL.md" >&2
+    exit 1
+  fi
+done
+
+python3 - <<'PY'
+import json
+from pathlib import Path
+import sys
+
+root = Path.cwd()
+marketplace = root / ".claude-plugin" / "marketplace.json"
+
+if not marketplace.exists():
+    print("[pre-push] missing .claude-plugin/marketplace.json", file=sys.stderr)
+    sys.exit(1)
+
+data = json.loads(marketplace.read_text(encoding="utf-8"))
+plugins = data.get("plugins", [])
+
+for plugin in plugins:
+    for rel in plugin.get("skills", []):
+        if not (root / rel).exists():
+            print(f"[pre-push] marketplace skill path not found: {rel}", file=sys.stderr)
+            sys.exit(1)
+PY
+
+blocked_paths="$(git diff --cached --name-only | rg '(^|/)(\\.env|node_modules/|\\.venv/|output/)' || true)"
+if [[ -n "$blocked_paths" ]]; then
+  echo "[pre-push] blocked paths are staged:" >&2
+  echo "$blocked_paths" >&2
+  exit 1
+fi
+
+echo "[pre-push] OK"

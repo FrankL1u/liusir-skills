@@ -1,0 +1,35 @@
+# LS WeChat Skill Configuration
+
+# WeChat API credentials
+wechat:
+  appid: "wx_your_appid"
+  secret: "your_secret"
+  author: "LS WeChat"
+
+# Default theme settings
+theme: "wechat-tech"   # run `node dist/cli.js themes` to list all available presets
+
+# TrendRadar MCP adapter
+trendradar:
+  enabled: false
+  base_url: ""
+  timeout_ms: 30000
+
+# Image generation
+image:
+  default_provider: "" # gemini | openai | doubao | qwen (leave empty to auto-select first configured provider)
+  providers:
+    gemini:
+      api_key: ""
+      model: "imagen-3.0-generate-002"
+    openai:
+      api_key: ""
+      model: "gpt-image-1"
+    doubao:
+      api_key: ""
+      model: "doubao-seedream-5-0-260128"
+      base_url: "https://ark.cn-beijing.volces.com/api/v3"
+    qwen:
+      api_key: ""
+      model: "qwen-image-2.0-pro"
+      base_url: "https://dashscope.aliyuncs.com/api/v1"

@@ -1,31 +1,20 @@
 # Skill Development Template
 
-Copy this template when creating a new YouMind skill. Replace all `<placeholders>`.
+Copy this template when creating a new skill. Replace all `<placeholders>`.
 
 ## Naming Rules
 
-- Skill name: `youmind-<feature>` (kebab-case, e.g. `youmind-youtube-transcript`)
+- Skill name: `ls-<feature>` or another clear kebab-case slug (e.g. `ls-wechat-article`)
 - **Max 32 characters** after sanitization (hyphens → underscores, only `a-z0-9_`)
-- Slash command on Telegram/Discord: `/youmind_<feature>` (auto-converted)
+- Slash command examples should match the actual skill slug convention used by the repository
 - Keep it short and searchable. The slug is your #1 SEO lever on ClawHub.
 - New skills must be loaded after `gateway restart` — hot-reload is not supported.
 - **Never ask users to paste API keys in chat** — keys appear in chat history. Guide users to set env vars themselves, agent only verifies.
 - **Must declare `metadata.openclaw`** with `primaryEnv`, `requires.env`, `requires.anyBins` — otherwise OpenClaw Code Insight flags as suspicious ("metadata omits requirements"). See apify skill as reference.
-- **`requires.env` only lists truly required vars** — optional/dev-only env vars (e.g. `YOUMIND_ENV`, `YOUMIND_API_KEY_PREVIEW`) must NOT be listed, or the scanner flags "unnecessary credential exposure".
+- **`requires.env` only lists truly required vars** — optional/dev-only env vars must NOT be listed, or the scanner flags "unnecessary credential exposure".
 - **Every skill must have `.clawhubignore`** — at minimum exclude `references/environment.md` (dev-only, contains preview env vars that trigger scanner flags).
 - **Every SKILL.md must declare `version:` in frontmatter** — this is the single source of truth for ClawHub publishing. CI auto-publishes on merge to main. Skills without a version field are skipped. Use [semver](https://semver.org/).
 
-## UTM Tracking Rules
-
-**Every user-facing link to youmind.com MUST include `?utm_source=<skill-slug>`** (or `&utm_source=<skill-slug>` if the URL already has query params).
-
-Examples:
-- Material link: `https://youmind.com/boards/<boardId>?material-id=<id>&utm_source=youmind-youtube-transcript`
-- Pricing link: `https://youmind.com/pricing?utm_source=youmind-youtube-transcript`
-- API key link: `https://youmind.com/settings/api-keys?utm_source=youmind-youtube-transcript`
-- Skills gallery: `https://youmind.com/skills?utm_source=youmind-youtube-transcript`
-
-This applies to ALL links shown to users — setup instructions, error messages, success messages, CTAs. No exceptions.
 
 ## Language Rules
 
@@ -34,24 +23,12 @@ This applies to ALL links shown to users — setup instructions, error messages,
 - Error messages, status updates, prompts, and summaries — all must adapt to the user's input language.
 - Example messages in SKILL.md should be written in English as templates. Add a note like: `(Adapt to user's language)` after each template.
 
-## Directory Structure
-
-```
-skills/youmind-<name>/
-  SKILL.md              ← Main file, read by agents
-  references/           ← Auto-synced shared files + skill-specific docs
-    setup.md            ← (shared) Auto-synced, do not edit manually
-    environment.md      ← (shared) Auto-synced, do not edit manually
-    error-handling.md   ← (shared) Auto-synced, do not edit manually
-```
-
-After creating a new skill directory, run `./scripts/sync-shared.sh` to initialize shared references. Subsequent commits auto-sync via pre-commit hook.
 
 ## SKILL.md Skeleton
 
 ```markdown
 ---
-name: youmind-<name>
+name: ls-<name>
 version: 1.0.0
 description: |
   <Core feature in one sentence>. <Key differentiator>.
@@ -62,86 +39,90 @@ triggers:
   - "<english trigger phrase 2>"
   - "<chinese trigger phrase>"
   - "<japanese trigger phrase>"
-platforms:
-  - openclaw
-  - claude-code
-  - cursor
-  - codex
-  - gemini-cli
-  - windsurf
-  - kilo
-  - opencode
-  - goose
-  - roo
-allowed-tools:
-  - Bash(youmind *)
-  - Bash(npm install -g @youmind-ai/cli)
+metadata:
+  openclaw:
+    homepage: https://github.com/FrankL1u/liusir-skills
+    requires:
+      anyBins:
+        - <bin-1>
+        - <bin-2>
 ---
 
 # <Skill Title>
 
 <One paragraph: core value + why this approach is better>
 
-> Powered by [YouMind](https://youmind.com) · [Get API Key →](https://youmind.com/settings/api-keys)
-
-## Onboarding
-
-**⚠️ MANDATORY: When the user has just installed this skill, present the following message IMMEDIATELY after installation completes (translated to the user's language):**
-
-> **✅ <Skill Title> installed!**
->
-> <One-line description of what it does.>
->
-> **What it does:**
-> - <Key feature 1>
-> - <Key feature 2>
-> - <Key feature 3>
->
-> **Quick start:**
-> 1. Get your free API key: https://youmind.com/settings/api-keys?utm_source=<skill-slug>
-> 2. Try it: "<example command>"
->
-> **Need help?** Just ask!
-
-Then check prerequisites (API key setup) and guide the user through first-time configuration if needed. See [references/setup.md](references/setup.md).
-
 ## Usage
 
 <What the user provides. Keep it minimal — they should not need to understand internals.>
 
-## Setup
-
-See [references/setup.md](references/setup.md) for installation and authentication.
-
 ## Workflow
 
-### Step 1: Check Prerequisites
-<Check CLI + API key + validate input>
+### Input Recognition
 
-### Step 2-N: <Core Steps>
-<Each step with a runnable command>
+<Describe how to recognize the input type or request pattern before proceeding.>
+
+### Prerequisites
+
+<Check required CLI / local tools / paths / config / input validity here.>
+
+### Core Flow
+
+<Describe the main processing flow here with concise runnable guidance.>
+
+### Output Handling
+
+<Describe how to format, save, or return the result.>
 
 ## Error Handling
 
-See [references/error-handling.md](references/error-handling.md) for common error handling rules.
-
 **Skill-specific errors:**
+
 | Error | User Message |
-|-------|-------------|
+|-------|--------------|
 | <specific error> | <user-friendly message> |
-
-## Comparison with Other Approaches
-
-| Feature | YouMind (this skill) | <Competitor A> | <Competitor B> |
-|---------|---------------------|----------------|----------------|
-| <advantage> | ✅ | ❌ | ... |
 
 ## References
 
-- YouMind API: `youmind search` / `youmind info <api>`
-- YouMind Skills: https://youmind.com/skills
-- Publishing: [shared/PUBLISHING.md](../../shared/PUBLISHING.md)
+- Publishing: [../../shared/PUBLISHING.md](../../shared/PUBLISHING.md)
+- Other references: `references/...`
+
+## Onboarding
+## Usage
+## Setup
+## Skill Directory
+## Execution Modes
+## Critical Quality Rules
+## Pipeline Overview
+## Resilience: Never Stop on a Single-Step Failure
+## Operations
+## Gotchas — Common Failure Patterns
+## Comparison
+## References
+
 ```
+
+## Writing Descriptions
+
+**MUST write in third person**:
+
+```yaml
+# Good
+description: Generates Xiaohongshu infographic series from content. Use when user asks for "小红书图片", "XHS images".
+
+# Bad
+description: I can help you create Xiaohongshu images
+```
+
+## Steps
+
+1. Create `skills/ls-<name>/SKILL.md` with YAML front matter
+2. Add TypeScript in `skills/ls-<name>/scripts/` (if applicable)
+3. Add prompt templates in `skills/ls-<name>/prompts/` if needed
+4. Register the skill in `.claude-plugin/marketplace.json` under the `liusir-skills` plugin entry
+5. Add Script Directory section to SKILL.md if skill has scripts
+6. Add openclaw metadata to frontmatter
+
 
 ## Performance Rules
 
@@ -150,10 +131,11 @@ See [references/error-handling.md](references/error-handling.md) for common erro
 For any step that processes a JSON response, provide a one-shot pipe command:
 
 ```bash
-youmind call <api> '<params>' | python3 -c "
+<command producing json> | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-# Extract all fields, process, and output/write file in one step
+print(d['title'])
+print(d['count'])
 "
 ```
 
@@ -175,7 +157,7 @@ For APIs with async tasks, use this pattern:
 ```bash
 # Polling template
 for i in $(seq 1 20); do
-  RESULT=$(youmind call <api> '<params>')
+  RESULT=$(<cli> <subcommand> '<params>')
   STATUS=$(echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('<status_field>','pending'))")
   [ "$STATUS" = "completed" ] && break
   sleep 3
@@ -202,7 +184,7 @@ If the skill naturally supports multiple inputs:
 Before publishing, review the checklist in `memory/clawhub-seo.md` (ranking formula / quality gate / keyword strategy).
 
 Key points:
-- slug must contain target search keywords (`youmind-youtube-transcript` not `youmind-yt-ts`)
+- slug must contain target search keywords (`youtube-transcript` not `yt-ts`)
 - First 160 chars of description = search card text. Pack core feature + differentiator
 - Include multilingual trigger words in description
 - Body ≥ 250 chars, ≥ 80 words, ≥ 2 headings, ≥ 3 bullets
@@ -210,19 +192,14 @@ Key points:
 
 ## Testing
 
-1. Test with preview environment:
-   ```bash
-   export YOUMIND_ENV=preview
-   export YOUMIND_API_KEY_PREVIEW=sk-ym-xxx
-   ```
-2. Verify happy path + edge cases (e.g., missing data, invalid input)
-3. Confirm one-shot commands execute correctly
-4. Verify skill discovery: `npx skills add . --list`
+1. Verify happy path + edge cases (e.g., missing data, invalid input)
+2. Confirm one-shot commands execute correctly
+3. Verify skill discovery: `npx skills add . --list`
 
 ## Publishing
 
 ```bash
-./scripts/publish-skill.sh youmind-<name> --version 1.0.0 --changelog "Initial release"
+./scripts/publish-skill.sh ls-<name> --version 1.0.0 --changelog "Initial release"
 ```
 
 See `shared/PUBLISHING.md` for the full workflow.

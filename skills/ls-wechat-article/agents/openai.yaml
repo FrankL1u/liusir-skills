@@ -1,0 +1,4 @@
+interface:
+  display_name: "LS WeChat Article"
+  short_description: "Write, format, preview, and publish WeChat articles"
+  default_prompt: "Use $ls-wechat-article to turn a topic, brief, or Markdown draft into a WeChat Official Account article, then preview or publish it with the toolkit. Before Step 6 image generation, ask about image scope, style, and inline image density unless the user already specified them. Before Step 7 preview or publish, ask for a theme choice or explicitly tell the user which theme will be used."
