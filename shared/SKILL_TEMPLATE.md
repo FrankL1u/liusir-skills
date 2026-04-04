@@ -50,55 +50,59 @@ metadata:
 
 # <Skill Title>
 
-<One paragraph: core value + why this approach is better>
+<One paragraph: core value, outcome, and why this workflow is better than an ad-hoc prompt. Point the agent to SKILL.md for routing rules, quality bars, resilience rules, and execution boundaries.>
+
+## Onboarding
+
+<Optional but recommended for installable user-facing skills. Define the exact first message to show immediately after install, when it must appear, and whether it should be translated to the user's language. Include 2-4 "Try it now" examples and the minimum viable setup path if the skill needs local tools or credentials.>
 
 ## Usage
 
-<What the user provides. Keep it minimal — they should not need to understand internals.>
+<Describe the main user entry patterns. Focus on what the user can provide, not internal implementation. Good patterns include: starting from a topic, starting from an existing file or URL, starting from a specific step, or running a maintenance / post-processing task. Add 3-6 concrete examples.>
 
-## Workflow
+## Setup
 
-### Input Recognition
+<List first-run requirements, install commands, required config files, required credentials, external service prerequisites, and what still works in degraded mode when setup is incomplete. Keep this operational and runnable.>
 
-<Describe how to recognize the input type or request pattern before proceeding.>
+## Skill Directory
 
-### Prerequisites
+<Tell the agent which files or folders to read on demand and why. Prefer a table with `Path` and `Purpose`. Include `references/`, `scripts/`, generated artifacts, client/project data folders, and any runtime config files. Explicitly say not to load everything upfront.>
 
-<Check required CLI / local tools / paths / config / input validity here.>
+## Execution Modes
 
-### Core Flow
+<Define how the skill routes work under different modes. At minimum, explain the default automatic mode and any explicit pause / routing mode such as `--step`, `--mode`, or phase-specific entry. State what should proceed automatically and what requires a user decision.>
 
-<Describe the main processing flow here with concise runnable guidance.>
+## Critical Quality Rules
 
-### Output Handling
+<Write the non-negotiable rules as numbered items. These should be the must-follow quality bars or policy rules the agent cannot safely infer from references alone. Examples: read a required guide before drafting, respect explicit routing, ask at specific decision boundaries, use only approved providers, publish or save in the required destination, or always rebuild generated artifacts after source edits.>
 
-<Describe how to format, save, or return the result.>
+## Pipeline Overview
 
-## Error Handling
+<Provide the end-to-end sequence as a concise ordered list. This should explain the major stages of the workflow from input recognition through final output and any maintenance or learning loop. Keep it high signal and easy to scan.>
 
-**Skill-specific errors:**
+## Resilience: Never Stop on a Single-Step Failure
 
-| Error | User Message |
-|-------|--------------|
-| <specific error> | <user-friendly message> |
+<Describe fallback behavior. The core rule is that a local failure should not terminate the entire workflow if a usable fallback exists. State when to retry, when to fall back, when to continue in degraded mode, and the narrow conditions that justify stopping entirely.>
+
+## Operations
+
+<Describe non-primary but important operational workflows such as first-run setup, onboarding a new client or project, maintenance, analytics backfill, imports, migrations, history refresh, or validation. If the details are long, summarize here and point to `references/operations.md`.>
+
+## Gotchas — Common Failure Patterns
+
+<List the mistakes or recurring breakpoints specific to this skill. Focus on failures caused by config drift, missing rebuilds, unsupported platform behavior, stale artifacts, path mismatches, incorrect assumptions about automation, or misuse of generated data. Explain what to check first.>
+
+## Comparison
+
+<Explain when this skill should be preferred over a generic prompt, adjacent skill, or manual workflow. State what extra reliability, repeatability, memory, tooling, or automation this skill adds. A short bullet list or compact comparison table works well.>
 
 ## References
 
 - Publishing: [../../shared/PUBLISHING.md](../../shared/PUBLISHING.md)
-- Other references: `references/...`
-
-## Onboarding
-## Usage
-## Setup
-## Skill Directory
-## Execution Modes
-## Critical Quality Rules
-## Pipeline Overview
-## Resilience: Never Stop on a Single-Step Failure
-## Operations
-## Gotchas — Common Failure Patterns
-## Comparison
-## References
+- Main execution detail: `references/...`
+- Operations detail: `references/operations.md`
+- Quality guide: `references/...`
+- CLI / script reference: `references/...`
 
 ```
 
