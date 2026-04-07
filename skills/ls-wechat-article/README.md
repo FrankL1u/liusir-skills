@@ -76,7 +76,8 @@ trendradar:
 
 Notes:
 - TrendRadar is not required for drafting, formatting, preview, or publish.
-- When enabled, the workflow can use `scripts/fetch_trendradar_hotspots.py` during Step 2.
+- When enabled, Step 2 uses `scripts/fetch_trendradar_hotspots.py` to merge TrendRadar news from the last 1 day with RSS items from the last 1 day.
+- The script emits one normalized JSON payload for downstream topic selection.
 - If TrendRadar is unavailable, the skill falls back to `scripts/fetch_hotspots.py`.
 
 ## Workflow Tutorial

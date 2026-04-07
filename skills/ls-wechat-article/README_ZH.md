@@ -76,7 +76,8 @@ trendradar:
 
 说明：
 - TrendRadar 不是写作、排版、预览、发布的必需依赖。
-- 启用后，Step 2 可以调用 `scripts/fetch_trendradar_hotspots.py` 获取热点信号。
+- 启用后，Step 2 会通过 `scripts/fetch_trendradar_hotspots.py` 合并最近 1 天的新闻和最近 1 天的 RSS 订阅内容。
+- 脚本输出仍然是给下游选题阶段使用的统一 JSON，而不是关键词列表。
 - 如果 TrendRadar 不可用，流程会回退到 `scripts/fetch_hotspots.py`。
 
 ## 使用教程

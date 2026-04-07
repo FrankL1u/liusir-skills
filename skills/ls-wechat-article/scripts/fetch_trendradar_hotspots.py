@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_BASE_URL = "http://127.0.0.1:3333/mcp"
 DEFAULT_TIMEOUT = 30
 DEFAULT_ACCEPT = "application/json, text/event-stream"
+DEFAULT_WINDOW_EXPRESSION = "最近1天"
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -143,6 +144,21 @@ def normalize_item(item):
         "url": item.get("url", ""),
         "timestamp": item.get("timestamp") or item.get("date", ""),
         "rank": item.get("rank"),
+        "content_type": "news",
+    }
+
+
+def normalize_rss_item(item):
+    title = item.get("title", "").strip()
+    return {
+        "title": title,
+        "hotness": 0,
+        "source": item.get("feed_id", "rss"),
+        "platform_name": item.get("feed_name", "RSS"),
+        "url": item.get("url", ""),
+        "timestamp": item.get("published_at") or item.get("date", "") or item.get("fetch_time", ""),
+        "rank": None,
+        "content_type": "rss",
     }
 
 
@@ -155,6 +171,62 @@ def deduplicate(items):
             seen.add(key)
             result.append(item)
     return result
+
+
+def score_item(item):
+    hotness = int(item.get("hotness", 0) or 0)
+    score = min(hotness, 1_000_000)
+
+    rank = item.get("rank")
+    if isinstance(rank, int):
+        score += max(0, 1000 - rank * 10)
+
+    if item.get("content_type") == "rss":
+        score += 500
+
+    if item.get("timestamp"):
+        score += 100
+
+    return score
+
+
+def resolve_date_range(client, expression):
+    raw = client.call_tool("resolve_date_range", {"expression": expression})
+    if not raw.get("success"):
+        raise RuntimeError(f"TrendRadar failed to resolve date range: {expression}")
+
+    date_range = raw.get("date_range")
+    if not isinstance(date_range, dict) or not date_range.get("start") or not date_range.get("end"):
+        raise RuntimeError("TrendRadar resolve_date_range returned an invalid date_range payload")
+
+    return date_range
+
+
+def fetch_recent_news_and_rss(client, limit, include_url):
+    date_range = resolve_date_range(client, DEFAULT_WINDOW_EXPRESSION)
+    news_raw = client.call_tool(
+        "get_news_by_date",
+        {
+            "date_range": date_range,
+            "limit": limit,
+            "include_url": include_url,
+        },
+    )
+    rss_raw = client.call_tool(
+        "get_latest_rss",
+        {
+            "days": 1,
+            "limit": limit,
+            "include_summary": False,
+        },
+    )
+
+    items = [normalize_item(item) for item in news_raw.get("data", [])]
+    items.extend(normalize_rss_item(item) for item in rss_raw.get("data", []))
+    items = deduplicate(items)
+    items.sort(key=score_item, reverse=True)
+
+    return ["trendradar:get_news_by_date", "trendradar:get_latest_rss"], items
 
 
 def main():
@@ -191,23 +263,16 @@ def main():
             },
         )
         source_name = "trendradar:search_news"
+        items = [normalize_item(item) for item in raw.get("data", [])]
+        items = deduplicate(items)
+        items.sort(key=score_item, reverse=True)
+        sources = [source_name]
     else:
-        raw = client.call_tool(
-            "get_latest_news",
-            {
-                "limit": args.limit,
-                "include_url": args.include_url,
-            },
-        )
-        source_name = "trendradar:get_latest_news"
-
-    items = [normalize_item(item) for item in raw.get("data", [])]
-    items = deduplicate(items)
-    items.sort(key=lambda x: int(x.get("hotness", 0) or 0), reverse=True)
+        sources, items = fetch_recent_news_and_rss(client, args.limit, args.include_url)
 
     output = {
         "timestamp": datetime.now().isoformat(),
-        "sources": [source_name],
+        "sources": sources,
         "count": len(items),
         "items": items,
     }
