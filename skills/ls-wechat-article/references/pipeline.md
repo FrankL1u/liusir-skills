@@ -37,6 +37,9 @@ Execution notes:
 - Prefer `AskUserQuestion` when the host provides it; otherwise ask a concise plain-text question
 - Only auto-fall back to `scripts/fetch_hotspots.py` when TrendRadar is unavailable or unreachable
 - `scripts/fetch_hotspots.py` may be slower because some upstream platforms can return transient errors and trigger built-in retries
+- `scripts/fetch_trendradar_hotspots.py` should merge TrendRadar news from the last 1 day with RSS items from the last 1 day
+- The merged payload remains normalized JSON shaped as `{ timestamp, sources, count, items }`
+- Step 3 consumes that merged JSON signal pool, not a pre-extracted keyword list
 - Treat both scripts as signal providers only; topic choice still depends on client fit and angle judgment
 
 For every source, filter by client fit:
