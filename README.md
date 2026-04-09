@@ -2,13 +2,17 @@
 
 AI agent skills for content workflows and publishing automation.
 
-This repository currently focuses on WeChat Official Account writing: drafting, formatting, theme preview, optional image generation, draft publishing, analytics backfill, and edit-learning workflows.
+This repository currently includes two content workflow skills:
+
+- WeChat Official Account article workflow
+- Xiaohongshu note workflow
 
 ## Available Skills
 
 | Skill | Description |
 |-------|-------------|
 | [ls-wechat-article](./skills/ls-wechat-article) | Write and publish WeChat Official Account articles end-to-end — topic intake, drafting, SEO polish, cover and inline images, theme preview, draft publish, stats backfill, and learning workflows |
+| [ls-xhs-note](./skills/ls-xhs-note) | Create Xiaohongshu note assets end-to-end — topic intake, source article drafting, native note writing, visual planning, and image generation |
 
 ## Quick Install
 
@@ -16,6 +20,7 @@ This repository currently focuses on WeChat Official Account writing: drafting, 
 
 ```bash
 npx skills add FrankL1u/liusir-skills --skill ls-wechat-article
+npx skills add FrankL1u/liusir-skills --skill ls-xhs-note
 ```
 
 ### See available skills
@@ -30,15 +35,20 @@ This repository also includes a plugin-style distribution path through `.claude-
 
 ## Prerequisites
 
-Some skills may require additional local setup. For `ls-wechat-article`, the common prerequisites are:
+Some skills may require additional local setup.
+
+Common prerequisites across the content workflow skills:
 
 - Node.js >= 18
 - Python >= 3.9
-- WeChat Official Account API credentials for publishing
 - Optional image provider keys for AI image generation
-- Optional TrendRadar MCP service for Step 2 topic signals
 
-See the skill-specific setup guide in [skills/ls-wechat-article/README.md](./skills/ls-wechat-article/README.md).
+Skill-specific notes:
+
+- `ls-wechat-article`: requires WeChat Official Account API credentials for publishing, and can optionally use TrendRadar MCP for topic signals
+- `ls-xhs-note`: does not publish directly; it can optionally use TrendRadar MCP for topic signals and image providers for Step 5 generation
+
+See the setup guides in [skills/ls-wechat-article/README.md](./skills/ls-wechat-article/README.md) and [skills/ls-xhs-note/README.md](./skills/ls-xhs-note/README.md).
 
 ## Works With
 
