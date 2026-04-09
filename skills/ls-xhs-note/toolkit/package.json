@@ -1,0 +1,33 @@
+{
+  "name": "ls-xhs-note-toolkit",
+  "version": "1.0.0",
+  "description": "Execute Xiaohongshu note image workflows and bundle artifacts",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "ls-xhs-note": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "preview": "tsx src/cli.ts preview",
+    "series": "tsx src/cli.ts series",
+    "styles": "tsx src/cli.ts styles",
+    "layouts": "tsx src/cli.ts layouts",
+    "presets": "tsx src/cli.ts presets",
+    "image-gen": "tsx src/image-gen.ts",
+    "learn-edits": "tsx src/learn-edits.ts",
+    "build-playbook": "tsx src/build-playbook.ts",
+    "validate-skill": "python3 ../scripts/validate_skill.py"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "yaml": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
