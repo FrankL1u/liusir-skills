@@ -1,12 +1,13 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
+import {
+  inferClientFromRuntimeArticlePath,
+  relativizeFromRuntimeRoot,
+  resolveRuntimeReadPath,
+  resolveRuntimeWritePath,
+} from './runtime-paths.js';
 
 export interface PublishHistoryEntry {
   title: string;
@@ -75,19 +76,15 @@ function parseFrontmatterMetadata(markdownText: string): FrontmatterMetadata {
 }
 
 function inferClientFromArticlePath(inputPath: string): string | null {
-  const absolutePath = resolve(inputPath);
-  const relativePath = relative(PROJECT_DIR, absolutePath);
-  const segments = relativePath.split('/').filter(Boolean);
-
-  if (segments[0] !== 'output' || segments.length < 3) {
-    return null;
-  }
-
-  return segments[1] || null;
+  return inferClientFromRuntimeArticlePath(inputPath);
 }
 
-function resolveHistoryPath(client: string): string {
-  return resolve(PROJECT_DIR, 'clients', client, 'history.yaml');
+function resolveHistoryReadPath(client: string): string {
+  return resolveRuntimeReadPath(['clients', client, 'history.yaml']);
+}
+
+function resolveHistoryWritePath(client: string): string {
+  return resolveRuntimeWritePath(['clients', client, 'history.yaml']);
 }
 
 function loadHistory(historyPath: string): PublishHistoryEntry[] {
@@ -147,12 +144,12 @@ export function recordPublishHistory(input: RecordPublishHistoryInput): {
     return null;
   }
 
-  const historyPath = resolveHistoryPath(client);
-  const history = loadHistory(historyPath);
+  const history = loadHistory(resolveHistoryReadPath(client));
+  const historyPath = resolveHistoryWritePath(client);
   const markdownPath = resolve(input.inputPath);
   const markdownText = readFileSync(markdownPath, 'utf-8');
   const metadata = parseFrontmatterMetadata(markdownText);
-  const relativeFile = relative(PROJECT_DIR, markdownPath);
+  const relativeFile = relativizeFromRuntimeRoot(markdownPath);
 
   const entry: PublishHistoryEntry = {
     title: input.title,

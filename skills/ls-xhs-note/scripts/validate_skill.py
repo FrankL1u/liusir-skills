@@ -43,9 +43,8 @@ REQUIRED_PATHS = [
     "toolkit/src/cli.ts",
     "toolkit/src/image-gen.ts",
     "toolkit/src/learn-edits.ts",
-    "clients/demo/style.yaml",
-    "clients/demo/history.yaml",
-    "output/.gitkeep",
+    "toolkit/src/runtime-paths.ts",
+    "toolkit/tests/runtime-paths.test.ts",
 ]
 
 REQUIRED_SKILL_HEADINGS = [
@@ -87,6 +86,8 @@ README_MUST_MENTION = [
     "series-plan.json",
     "series-outline.md",
     "series-manifest.json",
+    ".ls-xhs-note",
+    ".liusir-skills/ls-xhs-note",
 ]
 
 CLI_REFERENCE_TOKENS = [
@@ -167,9 +168,12 @@ def main() -> int:
                     errors.append(f"toolkit/package.json is missing npm script: {name}")
 
     for rel_path in ("clients/demo/style.yaml", "clients/demo/playbook.md"):
+        file_path = ROOT / rel_path
+        if not file_path.exists():
+            continue
         text = read_text(rel_path, errors)
         if text:
-          check_banned_tokens(rel_path, text, errors)
+            check_banned_tokens(rel_path, text, errors)
 
     print(f"Checked skill at: {ROOT}")
     for message in warnings:

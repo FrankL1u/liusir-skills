@@ -14,4 +14,10 @@ npm --version
 python3 --version
 ```
 
-The skill reads `config.yaml` from the skill root. Built JavaScript commands run from `toolkit/`.
+Built JavaScript commands run from `toolkit/`.
+
+Runtime data is resolved in this order:
+
+1. `./.ls-wechat-article/`
+2. `~/.liusir-skills/ls-wechat-article/`
+3. legacy skill-local files as a read-only fallback

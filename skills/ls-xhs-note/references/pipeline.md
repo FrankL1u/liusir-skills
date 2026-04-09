@@ -1,8 +1,10 @@
 # Pipeline Execution Detail
 
+`{runtimeRoot}` means either `./.ls-xhs-note/` or `~/.liusir-skills/ls-xhs-note/`.
+
 ## Step 1: Load client configuration
 
-Read `clients/{client}/style.yaml`.
+Read `{runtimeRoot}/clients/{client}/style.yaml`.
 
 Routing:
 
@@ -70,7 +72,7 @@ Read these files before drafting:
 - `references/writing-guide.md`
 - `references/title-rules.md`
 - `references/xhs-constraints.md`
-- `clients/{client}/playbook.md` if it exists
+- `{runtimeRoot}/clients/{client}/playbook.md` if it exists
 
 Step 4 is one continuous writing step:
 
@@ -85,7 +87,7 @@ Output rules:
 - write the source article and the note in the same step
 - keep one dominant argument
 - maintain enough section separation for later visual slicing
-- save to `output/{client}/{YYYY-MM-DD}-{title-slug}/note.md`
+- save to `{runtimeRoot}/output/{client}/{YYYY-MM-DD}-{title-slug}/note.md`
 - save the source article in the same bundle as `source-article.md`
 
 Artifact rule:

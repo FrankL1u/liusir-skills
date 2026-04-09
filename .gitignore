@@ -11,3 +11,5 @@ build/
 coverage/
 tmp/
 .clawhub-tmp/
+.ls-wechat-article/
+.ls-xhs-note/

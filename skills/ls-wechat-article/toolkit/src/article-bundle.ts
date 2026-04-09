@@ -1,10 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
+import { resolveWritableRuntimeRoot } from './runtime-paths.js';
 
 function slugifyTitle(title: string): string {
   const normalized = title
@@ -37,7 +34,8 @@ export interface ArticleBundlePaths {
 
 export function createArticleBundlePaths(client: string, title: string): ArticleBundlePaths {
   const slug = slugifyTitle(title);
-  const bundleDir = resolve(PROJECT_DIR, 'output', client, `${currentDateString()}-${slug}`);
+  const runtimeRoot = resolveWritableRuntimeRoot();
+  const bundleDir = resolve(runtimeRoot, 'output', client, `${currentDateString()}-${slug}`);
   const assetsDir = join(bundleDir, 'assets');
   const promptsDir = join(bundleDir, 'prompts');
 

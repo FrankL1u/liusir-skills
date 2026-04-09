@@ -2,28 +2,31 @@
 
 Use this file for setup, image execution support, and maintenance routines.
 
+`{runtimeRoot}` means either `./.ls-xhs-note/` or `~/.liusir-skills/ls-xhs-note/`.
+
 ## First-run setup
 
 1. install toolkit dependencies with `cd toolkit && npm install && npm run build`
 2. install Python helpers with `pip install -r requirements.txt`
-3. copy `config.example.yaml` to `config.yaml`
-4. add image provider keys if automatic image generation is needed
+3. create a runtime root: `./.ls-xhs-note/` or `~/.liusir-skills/ls-xhs-note/`
+4. copy `config.example.yaml` to `{runtimeRoot}/config.yaml`
+5. add image provider keys if automatic image generation is needed
 
 ## Client onboarding
 
-Create the minimum client structure when `clients/{client}/` does not exist.
+Create the minimum client structure when `{runtimeRoot}/clients/{client}/` does not exist.
 
 Required paths:
 
-- `clients/{client}/style.yaml`
-- `clients/{client}/history.yaml`
-- `clients/{client}/styles/`
+- `{runtimeRoot}/clients/{client}/style.yaml`
+- `{runtimeRoot}/clients/{client}/history.yaml`
+- `{runtimeRoot}/clients/{client}/styles/`
 
 Compatibility paths kept for internal maintenance:
 
-- `clients/{client}/playbook.md`
-- `clients/{client}/corpus/`
-- `clients/{client}/lessons/`
+- `{runtimeRoot}/clients/{client}/playbook.md`
+- `{runtimeRoot}/clients/{client}/corpus/`
+- `{runtimeRoot}/clients/{client}/lessons/`
 
 Use `references/style-template.md` as the starting shape for `style.yaml`.
 

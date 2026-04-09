@@ -53,6 +53,14 @@ Defaulting rules:
 - If the user wants inline images but gives no density, use `balanced`.
 - Never infer `no images` just because the user did not mention visuals.
 
+After intake, convert the decision into explicit execution inputs before calling the toolkit:
+
+- choose one `cover type`
+- choose the exact section headings that deserve inline images
+- choose one `inline type` for each chosen section
+
+The toolkit may read the selected section content to build prompts, but it must not decide which sections to illustrate or which image types to use.
+
 ### 3 Creative Directions
 
 Generate all three. Auto mode selects Creative A. If the workflow starts from an explicit `--step` that requires human choice, present all three and wait for selection.

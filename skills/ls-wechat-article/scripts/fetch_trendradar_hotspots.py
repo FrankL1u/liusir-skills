@@ -27,13 +27,23 @@ DEFAULT_TIMEOUT = 30
 DEFAULT_ACCEPT = "application/json, text/event-stream"
 DEFAULT_WINDOW_EXPRESSION = "最近1天"
 ROOT = Path(__file__).resolve().parents[1]
+SKILL_KEY = "ls-wechat-article"
+
+
+def runtime_roots():
+    project_root = Path.cwd() / f".{SKILL_KEY}"
+    user_root = Path.home() / ".liusir-skills" / SKILL_KEY
+    legacy_root = ROOT
+    return [project_root, user_root, legacy_root]
 
 
 def load_config():
-    for path in [ROOT / "config.yaml", ROOT / "config.example.yaml"]:
-        if path.exists():
-            with path.open("r", encoding="utf-8") as f:
-                return yaml.safe_load(f) or {}
+    for name in ["config.yaml", "config.example.yaml"]:
+        for root in runtime_roots():
+            path = root / name
+            if path.exists():
+                with path.open("r", encoding="utf-8") as f:
+                    return yaml.safe_load(f) or {}
     return {}
 
 

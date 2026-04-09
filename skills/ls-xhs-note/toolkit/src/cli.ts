@@ -3,6 +3,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { generateImageToFile } from "./image-gen.js";
 import { deriveSlug, ensureBundleDir, readText, writeJson, writeText } from "./bundle-utils.js";
+import { inferClientFromRuntimeOutputPath } from "./runtime-paths.js";
 
 const STYLES = [
   "clean-grid",
@@ -181,12 +182,7 @@ program
 await program.parseAsync(process.argv);
 
 function inferClient(markdownPath: string): string | null {
-  const segments = path.resolve(markdownPath).split(path.sep);
-  const outputIndex = segments.lastIndexOf("output");
-  if (outputIndex >= 0 && segments.length > outputIndex + 1) {
-    return segments[outputIndex + 1] || null;
-  }
-  return null;
+  return inferClientFromRuntimeOutputPath(markdownPath);
 }
 
 async function detectSiblingFile(filePath: string): Promise<string | null> {

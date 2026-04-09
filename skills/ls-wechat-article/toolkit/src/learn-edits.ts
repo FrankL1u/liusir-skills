@@ -7,13 +7,9 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
+import { resolveRuntimeReadPath, resolveRuntimeWritePath } from './runtime-paths.js';
 
 // ---------------------------------------------------------------------------
 // Diff analysis
@@ -111,16 +107,18 @@ function main() {
   const client = get('--client');
   if (!client) { console.error('需要 --client 参数'); process.exit(1); }
 
-  const lessonsDir = resolve(PROJECT_DIR, 'clients', client, 'lessons');
+  const lessonsReadPath = resolveRuntimeReadPath(['clients', client, 'lessons']);
+  const lessonsDir = dirname(resolveRuntimeWritePath(['clients', client, 'lessons', '.keep']));
   mkdirSync(lessonsDir, { recursive: true });
 
   // --- Summarize mode ---
   if (has('--summarize')) {
-    const files = readdirSync(lessonsDir).filter(f => f.endsWith('.yaml')).sort();
+    const sourceDir = existsSync(lessonsReadPath) ? lessonsReadPath : lessonsDir;
+    const files = existsSync(sourceDir) ? readdirSync(sourceDir).filter(f => f.endsWith('.yaml')).sort() : [];
     const lessons: unknown[] = [];
     for (const f of files) {
       try {
-        const data = parseYaml(readFileSync(resolve(lessonsDir, f), 'utf-8'));
+        const data = parseYaml(readFileSync(resolve(sourceDir, f), 'utf-8'));
         if (data) lessons.push(data);
       } catch (e) {
         console.error(`[WARN] 跳过无法解析的文件 ${f}: ${e}`);
@@ -160,14 +158,14 @@ function main() {
   };
 
   const ts = now.toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '_');
-  const outputFile = resolve(lessonsDir, `${ts}-diff.yaml`);
+  const outputFile = resolveRuntimeWritePath(['clients', client, 'lessons', `${ts}-diff.yaml`]);
   writeFileSync(outputFile, stringifyYaml(lesson), 'utf-8');
 
   console.log(JSON.stringify(analysis, null, 2));
   console.error(`Lesson saved to: ${outputFile}`);
 
   // Check if playbook update needed
-  const lessonCount = readdirSync(lessonsDir).filter(f => f.endsWith('.yaml')).length;
+  const lessonCount = readdirSync(dirname(outputFile)).filter(f => f.endsWith('.yaml')).length;
   if (lessonCount >= 5 && lessonCount % 5 === 0) {
     console.error(
       `${lessonCount} lessons accumulated. Consider updating playbook:\n` +

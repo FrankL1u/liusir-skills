@@ -3,10 +3,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, extname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parse as parseYaml } from "yaml";
+import { findRuntimeConfigPath } from "./runtime-paths.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, "../..");
 
 type ProviderName = "gemini" | "openai" | "doubao" | "qwen";
 
@@ -62,11 +62,9 @@ export function resolveImageSize(size: CliOptions["size"], provider: ProviderNam
 }
 
 function loadConfig(): RootConfig {
-  for (const name of ["config.yaml", "config.example.yaml"]) {
-    const path = resolve(PROJECT_DIR, name);
-    if (existsSync(path)) {
-      return (parseYaml(readFileSync(path, "utf-8")) ?? {}) as RootConfig;
-    }
+  const configPath = findRuntimeConfigPath();
+  if (configPath && existsSync(configPath)) {
+    return (parseYaml(readFileSync(configPath, "utf-8")) ?? {}) as RootConfig;
   }
   return {};
 }

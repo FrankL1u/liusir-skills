@@ -20,7 +20,7 @@ python3 --version
 
 ## Repo conventions
 
-- Repository-level configuration may live in skill-local `config.yaml` or `config.example.yaml`
+- Runtime configuration should live under `./.ls-wechat-article/` or `~/.liusir-skills/ls-wechat-article/`; keep `config.example.yaml` in the skill package as the copy source only
 - Built JavaScript commands usually run from a skill's `toolkit/` directory
 - Skill-local validation scripts usually live under `scripts/`
 

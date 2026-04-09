@@ -7,12 +7,9 @@
  */
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
+import { resolveRuntimeReadPath, resolveRuntimeWritePath } from './runtime-paths.js';
 
 function main() {
   const args = process.argv.slice(2);
@@ -24,7 +21,7 @@ function main() {
   const client = get('--client');
   if (!client) { console.error('需要 --client 参数'); process.exit(1); }
 
-  const corpusDir = resolve(PROJECT_DIR, 'clients', client, 'corpus');
+  const corpusDir = resolveRuntimeReadPath(['clients', client, 'corpus']);
   if (!existsSync(corpusDir)) {
     console.error(`Corpus directory not found: ${corpusDir}`);
     console.error(`Create it and add .md files: mkdir -p ${corpusDir}`);
@@ -124,7 +121,7 @@ function main() {
   console.log('7. Emotional tone (formal/casual/humorous spectrum)');
   console.log('8. Image style preferences');
   console.log();
-  console.log(`Save results to: ${resolve(PROJECT_DIR, 'clients', client, 'playbook.md')}`);
+  console.log(`Save results to: ${resolveRuntimeWritePath(['clients', client, 'playbook.md'])}`);
 }
 
 const isMain = process.argv[1]?.includes('build-playbook');

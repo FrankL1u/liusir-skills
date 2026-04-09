@@ -1,12 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { generateImageToFile, type ImageGenResult } from './image-gen.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = new URL('.', import.meta.url).pathname;
-const PROJECT_DIR = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+import { resolveWritableRuntimeRoot } from './runtime-paths.js';
 
 export type BenchmarkStyleKey =
   | 'notion'
@@ -251,7 +247,7 @@ function parseCsvList<T extends string>(value: string | undefined, allowed: read
 
 function buildOutputRoot(explicit?: string): string {
   if (explicit) return resolve(explicit);
-  return resolve(PROJECT_DIR, 'output', 'style-benchmark', currentDateString());
+  return resolve(resolveWritableRuntimeRoot(), 'output', 'style-benchmark', currentDateString());
 }
 
 function buildPromptBase(style: StylePreset, article: ArticleFixture): string {

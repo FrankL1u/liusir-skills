@@ -24,7 +24,7 @@ After changing `SKILL.md`, `README.md`, `references/`, or toolkit source files:
 
 ## Mutable data
 
-Repo-local runtime data may live under:
+Runtime data may live under `./.ls-wechat-article/` or `~/.liusir-skills/ls-wechat-article/`:
 
 - `clients/*/history.yaml`
 - `clients/*/lessons/`

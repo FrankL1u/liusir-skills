@@ -64,9 +64,10 @@ Workflow rules live in `references/`. Repeatable execution lives in `toolkit/`. 
 
 1. Run `cd toolkit && npm install && npm run build`.
 2. Run `pip install -r requirements.txt`.
-3. Copy `config.example.yaml` to `config.yaml`.
-4. Add image provider keys only if automatic image generation is needed.
-5. Run `python3 scripts/validate_skill.py` after setup or structural edits.
+3. Choose a runtime root: project-local `./.ls-xhs-note/` or user-level `~/.liusir-skills/ls-xhs-note/`.
+4. Copy `config.example.yaml` to `{runtimeRoot}/config.yaml`.
+5. Add image provider keys only if automatic image generation is needed.
+6. Run `python3 scripts/validate_skill.py` after setup or structural edits.
 
 ## Skill Directory
 
@@ -86,11 +87,17 @@ Workflow rules live in `references/`. Repeatable execution lives in `toolkit/`. 
 | `references/operations.md` | Setup, onboarding, export, and maintenance notes |
 | `references/style-template.md` | Client configuration template |
 | `references/skill-maintenance.md` | Documentation and validation rules |
-| `clients/{client}/style.yaml` | Client profile and visual defaults |
-| `clients/{client}/history.yaml` | Export history |
-| `clients/{client}/playbook.md` | Optional local writing notes |
+| `{runtimeRoot}/clients/{client}/style.yaml` | Client profile and visual defaults |
+| `{runtimeRoot}/clients/{client}/history.yaml` | Export history |
+| `{runtimeRoot}/clients/{client}/playbook.md` | Optional local writing notes |
 | `toolkit/dist/*.js` | Built CLI entrypoints |
 | `scripts/*.py` | Intake and validation helpers |
+
+`runtimeRoot` resolves in this order:
+
+1. `./.ls-xhs-note/`
+2. `~/.liusir-skills/ls-xhs-note/`
+3. the skill install directory as a read-only legacy fallback
 
 ## Pipeline Overview
 
@@ -135,7 +142,7 @@ Supported entry modes:
 1. Read `references/writing-guide.md` before drafting.
 2. Keep one dominant angle per note.
 3. Write native note copy with model reasoning, not with programmatic skeleton generation as the primary path.
-4. Respect `clients/{client}/style.yaml` tone and blacklist fields.
+4. Respect `{runtimeRoot}/clients/{client}/style.yaml` tone and blacklist fields.
 5. Keep the first screen fast to scan.
 6. Use `references/frameworks.md`, `references/drafting-skeletons.md`, `references/writing-guide.md`, and `references/title-rules.md` together in Step 4.
 7. Treat Step 5 as an image-generation workflow, not a dedicated first-page shortcut.

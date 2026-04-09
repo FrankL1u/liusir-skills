@@ -20,8 +20,15 @@
 ```bash
 cd toolkit && npm install && npm run build && cd ..
 pip install -r requirements.txt
-cp config.example.yaml config.yaml
+mkdir -p .ls-wechat-article
+cp config.example.yaml .ls-wechat-article/config.yaml
 ```
+
+运行态数据目录按以下顺序解析：
+
+1. `./.ls-wechat-article/`
+2. `~/.liusir-skills/ls-wechat-article/`
+3. 旧的 skill 目录文件只做只读兼容
 
 建议执行一次校验：
 
@@ -65,7 +72,7 @@ TrendRadar 是 Step 2 选题阶段可选的热点信号来源。
 项目地址：
 - [TrendRadar](https://github.com/sansan0/TrendRadar)
 
-在 `config.yaml` 中配置：
+在 `.ls-wechat-article/config.yaml` 或 `~/.liusir-skills/ls-wechat-article/config.yaml` 中配置：
 
 ```yaml
 trendradar:
@@ -109,13 +116,13 @@ trendradar:
 |------------|--------|------|
 | 图片范围 | `cover + inline images` / `cover only` / `inline only` / `no images` | 决定是否生成封面、正文图、两者或都不生成 |
 | 图片风格 | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | 决定整篇文章图片的共同视觉方向 |
-| 正文图数量 | `minimal` / `balanced` / `per-section` / `custom` | 决定正文图的生成密度 |
+| 正文图数量 | `minimal` / `balanced` / `per-section` / `custom` | 这是 agent 的规划输入，用来决定要准备多少个显式正文图目标 |
 
 #### 图片风格说明
 
 | 风格 key | 中文名称 | 更适合什么内容 |
 |----------|----------|----------------|
-| `follow article tone` | 跟随文章基调 | 不想手动选风格时，按文章内容自动决定 |
+| `follow article tone` | 跟随文章基调 | 不想手动选风格时，由 agent 按文章基调决定 |
 | `editorial` | 杂志信息图风 | 方法论、趋势判断、工具分析 |
 | `blueprint` | 技术蓝图风 | 架构、系统设计、流程说明 |
 | `notion` | 极简手绘线条风 | 知识分享、生产力、SaaS 内容 |
@@ -160,7 +167,7 @@ trendradar:
 | 从 topic 开始 | 你只有一个想写的主题，还没有文章草稿 | `帮我写一篇关于 AI 编程的公众号文章` |
 | 从 Markdown 开始 | 你已经有现成 Markdown，只需要排版、预览或发布 | `把这篇 Markdown 排版成公众号样式并发布到草稿箱` |
 | 从指定步骤开始 | 你不想走完整流程，只想从某一步接着做 | `从 --step 3.5 开始，我想先选框架` |
-| 先做图片决策 | 你想单独先决定图片范围、风格和配图数量 | `从 --step 6 开始，我想先决定图片配置` |
+| 先做图片决策 | 你想单独先决定图片范围、风格、配图数量和显式图片目标 | `从 --step 6 开始，我想先决定图片配置` |
 | 先做主题与发布 | 你已经有文章，只想确认主题、预览或发布 | `从 --step 7 开始，先告诉我会用什么主题` |
 | 做复盘与学习 | 你想看文章表现、学习人工改稿，或刷新 playbook | `从 --step 8 开始，帮我更新 history、stats 和 lessons` |
 
@@ -180,10 +187,10 @@ node dist/cli.js publish article.md --theme latepost-depth
 node dist/cli.js theme-preview article.md
 
 # 正文配图
-node dist/cli.js illustrate article.md --client demo --style editorial --density balanced --provider qwen
+node dist/cli.js illustrate article.md --client demo --style editorial --target "执行闭环::flowchart" --target "验证层::framework" --provider qwen
 
 # 生成封面
-node dist/cli.js cover article.md --client demo --style blueprint --provider openai
+node dist/cli.js cover article.md --client demo --style blueprint --type conceptual --provider openai
 
 # 数据回填
 node dist/fetch-stats.js --client demo --days 7
@@ -196,16 +203,16 @@ node dist/build-playbook.js --client demo
 ```
 
 发布时如果不传 `--cover`，工具会尝试使用正文第一张图片作为草稿封面。  
-`illustrate` 默认会把本次文章产物写入 `output/{client}/{date}-{title-slug}/`，其中包含 `article.md`、`assets/` 和 `prompts/`。
+`illustrate` 默认会把本次文章产物写入 `{runtime_root}/output/{client}/{date}-{title-slug}/`，其中包含 `article.md`、`assets/` 和 `prompts/`。toolkit 不再自己决定该配哪些小节、该用什么图片类型；这些都要由 agent 先选好，再显式传入 `--target`。
 
-公共图片风格库位于 [references/image-system.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml)。`clients/{client}/style.yaml` 只配置默认主题、写作画像和 client 覆盖项。
+公共图片风格库位于 [references/image-system.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml)。运行态 client 数据位于 `{runtime_root}/clients/{client}/style.yaml`，只配置默认主题、写作画像和 client 覆盖项。
 
 ## 让文章越写越像这个号
 
 这条链路分成三部分：
 
 1. 喂语料  
-   把历史代表文章、外部高相关案例文、结构参考稿放进 `clients/{client}/corpus/`，再运行 `build-playbook`。
+   把历史代表文章、外部高相关案例文、结构参考稿放进 `{runtime_root}/clients/{client}/corpus/`，再运行 `build-playbook`。
 
 2. 改稿学习  
    文章发布后，如果你人工改过草稿，再运行 `learn-edits`，把草稿和终稿差异写进 `lessons/`。
@@ -216,7 +223,7 @@ node dist/build-playbook.js --client demo
 ## 目录结构
 
 ```text
-clients/demo/
+{runtime_root}/clients/demo/
 ├── style.yaml
 ├── history.yaml
 ├── playbook.md
@@ -225,7 +232,7 @@ clients/demo/
 └── themes/
 ```
 
-这些目录和文件由 [style-template.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/style-template.md) 说明。发布记录会写入 `history.yaml`，改稿学习会写入 `lessons/`，`corpus/` 作为参考语料目录供后续刷新 `playbook.md` 使用。
+这些目录和文件由 [style-template.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/style-template.md) 说明。发布记录会写入 `{runtime_root}/clients/{client}/history.yaml`，改稿学习会写入 `{runtime_root}/clients/{client}/lessons/`，`corpus/` 作为参考语料目录供后续刷新 `playbook.md` 使用。
 
 ## 相关文件
 

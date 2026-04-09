@@ -1,6 +1,8 @@
 # Client Configuration Template
 
-Use the following structure when creating `clients/{client}/style.yaml`.
+`{runtimeRoot}` means either `./.ls-xhs-note/` or `~/.liusir-skills/ls-xhs-note/`.
+
+Use the following structure when creating `{runtimeRoot}/clients/{client}/style.yaml`.
 
 ```yaml
 name: "Client Name"
@@ -32,7 +34,7 @@ author: "Author"
 ## Directory structure
 
 ```text
-clients/{client}/
+{runtimeRoot}/clients/{client}/
 ├── style.yaml
 ├── history.yaml
 ├── playbook.md

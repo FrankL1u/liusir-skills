@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { readFile, writeFile } from "node:fs/promises";
+import { resolveRuntimeWritePath } from "./runtime-paths.js";
 
 const program = new Command();
 
@@ -22,9 +22,12 @@ program
 
     const draft = await readFile(options.draft, "utf-8");
     const final = await readFile(options.final, "utf-8");
-    const lessonDir = path.resolve(process.cwd(), "..", `clients/${options.client}/lessons`);
-    await mkdir(lessonDir, { recursive: true });
-    const lessonPath = path.join(lessonDir, `${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
+    const lessonPath = resolveRuntimeWritePath([
+      "clients",
+      options.client,
+      "lessons",
+      `${new Date().toISOString().replace(/[:.]/g, "-")}.md`,
+    ]);
     const content = [
       "# Edit Lesson",
       "",

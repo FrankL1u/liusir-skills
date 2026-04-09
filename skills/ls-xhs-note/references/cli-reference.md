@@ -40,7 +40,13 @@ node dist/cli.js presets
 Default output directory when Step 4 and Step 5 artifacts are written:
 
 ```text
-output/{client}/{YYYY-MM-DD}-{slug}/
+./.ls-xhs-note/output/{client}/{YYYY-MM-DD}-{slug}/
+```
+
+If `./.ls-xhs-note/` is absent, the CLI falls back to:
+
+```text
+~/.liusir-skills/ls-xhs-note/output/{client}/{YYYY-MM-DD}-{slug}/
 ```
 
 Current bundle files:

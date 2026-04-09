@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { resolveWritableRuntimeRoot } from "./runtime-paths.js";
 
 export async function readText(filePath: string): Promise<string> {
   return readFile(filePath, "utf-8");
@@ -31,7 +32,7 @@ export async function ensureBundleDir(markdownPath: string, client: string, slug
   }
 
   const date = new Date().toISOString().slice(0, 10);
-  const bundleDir = path.resolve(process.cwd(), "..", `output/${client}/${date}-${slug}`);
+  const bundleDir = path.resolve(resolveWritableRuntimeRoot(), "output", client, `${date}-${slug}`);
   await mkdir(path.join(bundleDir, "assets", "images"), { recursive: true });
   await mkdir(path.join(bundleDir, "images"), { recursive: true });
   await mkdir(path.join(bundleDir, "prompts"), { recursive: true });

@@ -1,12 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 import { parse as parseYaml } from 'yaml';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
+import { resolveRuntimeReadPath, SKILL_ROOT } from './runtime-paths.js';
 
 export type InlineImageType =
   | 'infographic'
@@ -41,8 +37,6 @@ export interface ClientImageSystem {
   defaults?: {
     cover_style?: string;
     inline_style?: string;
-    cover_type?: string;
-    inline_type_by_content?: Record<string, string>;
   };
   cover_types?: Array<{
     key: string;
@@ -167,7 +161,7 @@ function matchConfiguredStyle(
 }
 
 function loadPublicImageSystem(): ClientImageSystem | null {
-  const configPath = resolve(PROJECT_DIR, 'references', 'image-system.yaml');
+  const configPath = resolve(SKILL_ROOT, 'references', 'image-system.yaml');
   if (!existsSync(configPath)) return null;
   return (parseYaml(readFileSync(configPath, 'utf-8')) as ClientImageSystem | null) ?? null;
 }
@@ -196,10 +190,6 @@ function mergeImageSystems(
     defaults: {
       ...(base.defaults ?? {}),
       ...(override.defaults ?? {}),
-      inline_type_by_content: {
-        ...(base.defaults?.inline_type_by_content ?? {}),
-        ...(override.defaults?.inline_type_by_content ?? {}),
-      },
     },
     cover_types: override.cover_types?.length ? override.cover_types : base.cover_types,
     inline_types: override.inline_types?.length ? override.inline_types : base.inline_types,
@@ -211,7 +201,7 @@ export function loadClientImageSystem(client?: string): ClientImageSystem | null
   const publicSystem = loadPublicImageSystem();
   if (!client || client === 'default') return publicSystem;
 
-  const stylePath = resolve(PROJECT_DIR, 'clients', client, 'style.yaml');
+  const stylePath = resolveRuntimeReadPath(['clients', client, 'style.yaml']);
   if (!existsSync(stylePath)) return publicSystem;
   const raw = parseYaml(readFileSync(stylePath, 'utf-8')) as ClientStyleFile | null;
   return mergeImageSystems(publicSystem, raw?.image_system ?? null);
@@ -281,53 +271,30 @@ export function resolveCoverStyleProfile(
   return { key: null, profile: null, customStyleText: null };
 }
 
-function detectArticleContentKey(articleTitle: string): string {
-  const title = articleTitle.toLowerCase();
-  if (/(评测|怎么选|对比|cursor|claude|codex|工具)/i.test(title)) return 'tool_review';
-  if (/(我|复盘|7天|做成|收费|故事|亲历|经历)/i.test(title)) return 'personal_narrative';
-  if (/(如何|搭建|框架|系统|方法|结构|模型|执行系统)/i.test(title)) return 'methodology_framework';
-  return 'trend_judgment';
+function requireCoverType(value: string | undefined): CoverImageType {
+  if (!value?.trim()) {
+    throw new Error('Explicit cover type is required. Pass --type and let the agent choose it from the references.');
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (!(normalized in COVER_TYPE_DIRECTIONS)) {
+    throw new Error(`Unknown cover type: ${value}`);
+  }
+
+  return normalized as CoverImageType;
 }
 
-export function detectCoverType(
-  articleTitle: string,
-  contentText: string,
-  imageSystem: ClientImageSystem | null,
-): CoverImageType {
-  const haystack = `${articleTitle} ${contentText}`.toLowerCase();
-
-  if (/(我|复盘|经历|故事|一天|7天|桌面|工作台|个人)/i.test(haystack)) return 'scene';
-  if (/(对比|比较|vs|怎么选|区别|差异)/i.test(haystack)) return 'metaphor';
-  if (/(框架|结构|系统|模型|架构|工作流|方法)/i.test(haystack)) return 'conceptual';
-  if (/(趋势|判断|未来|变化|为什么)/i.test(haystack)) return 'hero';
-
-  const fallback = imageSystem?.defaults?.cover_type;
-  if (fallback && COVER_TYPE_DIRECTIONS[fallback as CoverImageType]) {
-    return fallback as CoverImageType;
+function requireInlineType(value: string | undefined): InlineImageType {
+  if (!value?.trim()) {
+    throw new Error('Explicit inline type is required. Pass agent-selected targets instead of letting the toolkit infer them.');
   }
-  return 'conceptual';
-}
 
-export function detectInlineType(
-  headingText: string,
-  contentLines: string[],
-  articleTitle: string,
-  imageSystem: ClientImageSystem | null,
-): InlineImageType {
-  const haystack = `${headingText} ${cleanText(contentLines.join(' '))}`.toLowerCase();
-
-  if (/(时间线|阶段|历程|进度|里程碑|演化|发展|7天|第一天|第二天)/i.test(haystack)) return 'timeline';
-  if (/(对比|比较|区别|差异|vs|优劣|更适合|前后|两种|三类)/i.test(haystack)) return 'comparison';
-  if (/(流程|步骤|工作流|链路|路径|执行|推进|如何|怎么|闭环)/i.test(haystack)) return 'flowchart';
-  if (/(框架|结构|架构|系统|模型|能力|层|模块|关系|原则)/i.test(haystack)) return 'framework';
-  if (/(数据|指标|图表|增长|占比|统计|数量|分布|看板|dashboard)/i.test(haystack)) return 'infographic';
-  if (/(故事|场景|经历|复盘|现场|一天|第一次|工作台|桌面)/i.test(haystack)) return 'scene';
-
-  const fallbackKey = imageSystem?.defaults?.inline_type_by_content?.[detectArticleContentKey(articleTitle)];
-  if (fallbackKey && INLINE_TYPE_DIRECTIONS[fallbackKey as InlineImageType]) {
-    return fallbackKey as InlineImageType;
+  const normalized = value.trim().toLowerCase();
+  if (!(normalized in INLINE_TYPE_DIRECTIONS)) {
+    throw new Error(`Unknown inline type: ${value}`);
   }
-  return 'framework';
+
+  return normalized as InlineImageType;
 }
 
 function buildCharacterConstraint(imageSystem: ClientImageSystem | null): string[] {
@@ -345,12 +312,13 @@ export function buildInlineImagePrompt(args: {
   articleTitle: string;
   sectionHeading: string;
   contentLines: string[];
+  inlineType?: string;
   styleText: string;
   color: string;
   imageSystem: ClientImageSystem | null;
 }): { prompt: string; inlineType: InlineImageType; styleKey: string | null } {
   const summary = cleanText(args.contentLines.join(' ')).slice(0, 240);
-  const inlineType = detectInlineType(args.sectionHeading, args.contentLines, args.articleTitle, args.imageSystem);
+  const inlineType = requireInlineType(args.inlineType);
   const style = resolveInlineStyleProfile(args.imageSystem, args.styleText);
 
   const promptParts = [
@@ -395,12 +363,7 @@ export function buildCoverImagePrompt(args: {
   requestedCoverType?: string;
 }): { prompt: string; coverType: CoverImageType; styleKey: string | null } {
   const summary = cleanText(args.articleContent).slice(0, 280);
-  const detectedType = detectCoverType(args.articleTitle, args.articleContent, args.imageSystem);
-  const requestedType = args.requestedCoverType?.trim().toLowerCase();
-  const coverType =
-    requestedType && COVER_TYPE_DIRECTIONS[requestedType as CoverImageType]
-      ? (requestedType as CoverImageType)
-      : detectedType;
+  const coverType = requireCoverType(args.requestedCoverType);
   const style = resolveCoverStyleProfile(args.imageSystem, args.styleText);
 
   const promptParts = [

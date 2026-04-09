@@ -1,14 +1,14 @@
 import { Command } from "commander";
 import { mkdir, readdir, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { resolveRuntimeReadPath, resolveRuntimeWritePath } from "./runtime-paths.js";
 
 const program = new Command();
 
 program
   .requiredOption("--client <client>")
   .action(async (options) => {
-    const corpusDir = path.resolve(process.cwd(), "..", `clients/${options.client}/corpus`);
-    const playbookPath = path.resolve(process.cwd(), "..", `clients/${options.client}/playbook.md`);
+    const corpusDir = resolveRuntimeReadPath(["clients", options.client, "corpus"]);
+    const playbookPath = resolveRuntimeWritePath(["clients", options.client, "playbook.md"]);
     await mkdir(corpusDir, { recursive: true });
     const files = await readdir(corpusDir).catch(() => []);
     const content = [
