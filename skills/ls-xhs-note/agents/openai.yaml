@@ -1,0 +1,4 @@
+interface:
+  display_name: "XHS Note Workflow"
+  short_description: "Draft, derive, package, and export Xiaohongshu note assets"
+  default_prompt: "Use $ls-xhs-note to turn a topic, long-form Markdown source, or existing draft into a Xiaohongshu note asset package with titles, hooks, visuals, and export files."

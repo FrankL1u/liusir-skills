@@ -1,0 +1,26 @@
+# LS Xiaohongshu Skill Configuration
+
+style: "editorial"
+
+trendradar:
+  enabled: false
+  base_url: ""
+  timeout_ms: 30000
+
+image:
+  default_provider: "" # provider key
+  providers:
+    gemini:
+      api_key: ""
+      model: "imagen-3.0-generate-002"
+    openai:
+      api_key: ""
+      model: "gpt-image-1"
+    doubao:
+      api_key: ""
+      model: "doubao-seedream-5-0-260128"
+      base_url: "https://ark.cn-beijing.volces.com/api/v3"
+    qwen:
+      api_key: ""
+      model: "qwen-image-2.0"
+      base_url: "https://dashscope.aliyuncs.com/api/v1"

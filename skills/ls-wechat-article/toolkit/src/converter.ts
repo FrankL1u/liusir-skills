@@ -339,13 +339,14 @@ export class WeChatConverter {
 /**
  * 生成完整 HTML 用于浏览器预览（仅本地预览，非微信发布用）
  */
-export function previewHtml(bodyHtml: string, theme: Theme): string {
+export function previewHtml(bodyHtml: string, theme: Theme, baseHref?: string): string {
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Preview - ${theme.name}</title>
+    ${baseHref ? `<base href="${baseHref}">` : ''}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {

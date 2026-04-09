@@ -7,14 +7,10 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { getAccessToken } from './wechat-api.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
+import { findRuntimeConfigPath, resolveRuntimeReadPath, resolveRuntimeWritePath } from './runtime-paths.js';
 
 // ---------------------------------------------------------------------------
 // HTTP with retry
@@ -89,14 +85,15 @@ async function main() {
 
   if (!client) { console.error('需要 --client 参数'); process.exit(1); }
 
-  const historyPath = resolve(PROJECT_DIR, 'clients', client, 'history.yaml');
-  if (!existsSync(historyPath)) {
-    console.error(`文件不存在: ${historyPath}`);
+  const historyReadPath = resolveRuntimeReadPath(['clients', client, 'history.yaml']);
+  if (!existsSync(historyReadPath)) {
+    console.error(`文件不存在: ${historyReadPath}`);
     process.exit(1);
   }
+  const historyWritePath = resolveRuntimeWritePath(['clients', client, 'history.yaml']);
 
   const history: Record<string, unknown>[] =
-    parseYaml(readFileSync(historyPath, 'utf-8')) ?? [];
+    parseYaml(readFileSync(historyReadPath, 'utf-8')) ?? [];
   if (!Array.isArray(history)) {
     console.error('history.yaml 格式异常');
     process.exit(1);
@@ -104,8 +101,8 @@ async function main() {
 
   // Get access token
   if (!token) {
-    const configPath = resolve(PROJECT_DIR, 'config.yaml');
-    if (existsSync(configPath)) {
+    const configPath = findRuntimeConfigPath();
+    if (configPath && existsSync(configPath)) {
       const cfg = parseYaml(readFileSync(configPath, 'utf-8')) ?? {};
       const wechat = (cfg as Record<string, unknown>).wechat as Record<string, string> | undefined;
       if (wechat?.appid && wechat?.secret) {
@@ -158,7 +155,7 @@ async function main() {
   }
 
   if (updated > 0) {
-    writeFileSync(historyPath, stringifyYaml(history), 'utf-8');
+    writeFileSync(historyWritePath, stringifyYaml(history), 'utf-8');
     console.error(`Updated ${updated} entries in history.yaml`);
   } else {
     console.error('No matching articles found to update.');

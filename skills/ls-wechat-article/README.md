@@ -20,8 +20,15 @@ Requirements: Node.js >= 18, Python >= 3.9, and a verified WeChat Official Accou
 ```bash
 cd toolkit && npm install && npm run build && cd ..
 pip install -r requirements.txt
-cp config.example.yaml config.yaml
+mkdir -p .ls-wechat-article
+cp config.example.yaml .ls-wechat-article/config.yaml
 ```
+
+Runtime data is resolved in this order:
+
+1. `./.ls-wechat-article/`
+2. `~/.liusir-skills/ls-wechat-article/`
+3. legacy skill-local files as a read-only fallback
 
 Recommended validation:
 
@@ -65,7 +72,7 @@ If it is installed and reachable, the workflow can use it to fetch hotspot signa
 Project:
 - [TrendRadar](https://github.com/sansan0/TrendRadar)
 
-Configuration in `config.yaml`:
+Configuration in `.ls-wechat-article/config.yaml` or `~/.liusir-skills/ls-wechat-article/config.yaml`:
 
 ```yaml
 trendradar:
@@ -92,7 +99,7 @@ Notes:
 | Step 3.5 | Pick the article framework |
 | Step 4 | Draft the article |
 | Step 5 | Run SEO and de-AI polish |
-| Step 6 | Decide image scope, image style, and inline image density |
+| Step 6 | Decide image scope, image style, inline image density, then convert that into explicit cover and inline targets |
 | Step 7 | Decide theme, generate HTML, preview or publish to drafts |
 | Step 8 | Update `history.yaml`, backfill stats, learn edits, refresh playbook |
 
@@ -109,13 +116,13 @@ This skill handles two kinds of style:
 |-----------------|---------|---------|
 | Image scope | `cover + inline images` / `cover only` / `inline only` / `no images` | Whether to generate a cover, inline images, both, or none |
 | Image style | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | Shared visual direction for the article's images |
-| Inline image density | `minimal` / `balanced` / `per-section` / `custom` | How many inline images to generate |
+| Inline image density | `minimal` / `balanced` / `per-section` / `custom` | Agent planning input for how many inline targets to prepare |
 
 #### Image styles
 
 | Style key | Meaning | Best for |
 |-----------|---------|----------|
-| `follow article tone` | Auto-follow article tone | When you do not want to choose manually |
+| `follow article tone` | Agent follows the article tone | When you do not want to choose manually |
 | `editorial` | Editorial infographic style | Methods, trend analysis, tool analysis |
 | `blueprint` | Technical blueprint style | Architecture, systems, workflows |
 | `notion` | Minimal hand-drawn line style | Knowledge sharing, productivity, SaaS |
@@ -160,7 +167,7 @@ If the user does not specify a theme, the workflow should either ask for one or 
 | Start from a topic | You have a topic but no draft yet | `Help me write a WeChat article about AI coding` |
 | Start from Markdown | You already have Markdown and only need formatting, preview, or publish | `Format this Markdown for WeChat and publish it to drafts` |
 | Start from a specific step | You want to enter at a specific workflow step | `Start from --step 3.5 and help me choose a framework` |
-| Decide images first | You want to decide image scope, style, and density before generation | `Start from --step 6 and let me decide image settings` |
+| Decide images first | You want to decide image scope, style, density, and explicit image targets before generation | `Start from --step 6 and let me decide image settings` |
 | Decide theme and publish | You already have the article and only need theme, preview, or publish | `Start from --step 7 and tell me which theme will be used` |
 | Review and learning | You want stats, edit-learning, or playbook refresh | `Start from --step 8 and help me update history, stats, and lessons` |
 
@@ -180,10 +187,10 @@ node dist/cli.js publish article.md --theme latepost-depth
 node dist/cli.js theme-preview article.md
 
 # Inline illustrations
-node dist/cli.js illustrate article.md --client demo --style editorial --density balanced --provider qwen
+node dist/cli.js illustrate article.md --client demo --style editorial --target "执行闭环::flowchart" --target "验证层::framework" --provider qwen
 
 # Cover generation
-node dist/cli.js cover article.md --client demo --style blueprint --provider openai
+node dist/cli.js cover article.md --client demo --style blueprint --type conceptual --provider openai
 
 # Stats backfill
 node dist/fetch-stats.js --client demo --days 7
@@ -196,16 +203,16 @@ node dist/build-playbook.js --client demo
 ```
 
 If `--cover` is omitted during publish, the tool will try to use the first image in the article as the draft cover.
-`illustrate` writes article output to `output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`.
+`illustrate` writes article output to `{runtime_root}/output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`. The toolkit no longer chooses sections or image types on its own; pass explicit `--target` entries from the agent.
 
-The shared image style library lives in [references/image-system.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml). `clients/{client}/style.yaml` only stores default theme, writing profile, and client-specific overrides.
+The shared image style library lives in [references/image-system.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml). Runtime client data lives under `{runtime_root}/clients/{client}/style.yaml` and only stores default theme, writing profile, and client-specific overrides.
 
 ## Continuous Learning
 
 This loop has three parts:
 
 1. Feed corpus  
-   Put representative historical articles, strong external reference pieces, and structure notes into `clients/{client}/corpus/`, then run `build-playbook`.
+   Put representative historical articles, strong external reference pieces, and structure notes into `{runtime_root}/clients/{client}/corpus/`, then run `build-playbook`.
 
 2. Learn from edits  
    After manual revisions, run `learn-edits` to write draft-vs-final differences into `lessons/`.
@@ -216,7 +223,7 @@ This loop has three parts:
 ## Directory Structure
 
 ```text
-clients/demo/
+{runtime_root}/clients/demo/
 ├── style.yaml
 ├── history.yaml
 ├── playbook.md
@@ -225,7 +232,7 @@ clients/demo/
 └── themes/
 ```
 
-See [style-template.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/style-template.md) for the client template. Publish records go to `history.yaml`, edit learning goes to `lessons/`, and `corpus/` acts as the reference article directory for future playbook refresh.
+See [style-template.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/style-template.md) for the client template. Publish records go to `{runtime_root}/clients/{client}/history.yaml`, edit learning goes to `{runtime_root}/clients/{client}/lessons/`, and `corpus/` acts as the reference article directory for future playbook refresh.
 
 ## Related Files
 

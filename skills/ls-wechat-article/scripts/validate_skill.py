@@ -34,9 +34,6 @@ REQUIRED_PATHS = [
     "toolkit/src/fetch-stats.ts",
     "toolkit/src/image-gen.ts",
     "toolkit/src/learn-edits.ts",
-    "clients/demo/style.yaml",
-    "clients/demo/history.yaml",
-    "output/.gitkeep",
 ]
 
 REQUIRED_SKILL_HEADINGS = [
@@ -244,6 +241,8 @@ def collect_local_doc_paths(doc_paths: list[Path]) -> list[tuple[Path, str, Path
 
 def normalize_path(raw: str) -> str | None:
     if not raw or "://" in raw or raw.startswith("#"):
+        return None
+    if raw.startswith("~") or raw.startswith("./.") or raw.startswith(".\\."):
         return None
     if "\n" in raw or " " in raw:
         return None

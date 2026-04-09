@@ -40,6 +40,8 @@ metadata:
 
 Write and publish WeChat Official Account articles without manual formatting. This skill keeps workflow rules in documentation and repeatable execution in code. Use `SKILL.md` for trigger rules, execution modes, routing overview, resilience rules, and non-negotiable quality bars. Use `references/` files for detailed execution guidance.
 
+Workflow judgment stays in the docs and the agent. Toolkit commands should execute explicit decisions, not infer article strategy from content.
+
 ## Onboarding
 
 **⚠️ MANDATORY: When the user has just installed this skill, present this message immediately. Do not ask whether they want an introduction. Translate it to the user's language.**
@@ -63,7 +65,7 @@ Write and publish WeChat Official Account articles without manual formatting. Th
 > **One-time setup:**
 > 1. `cd toolkit && npm install && npm run build && cd ..`
 > 2. `pip install -r requirements.txt`
-> 3. `cp config.example.yaml config.yaml`
+> 3. `mkdir -p .ls-wechat-article && cp config.example.yaml .ls-wechat-article/config.yaml`
 > 4. Fill in `wechat.appid` and `wechat.secret`, then add your public IP to the WeChat API whitelist
 >
 > No WeChat API yet? You can still write and preview locally.
@@ -100,10 +102,11 @@ Before first use, prepare the environment:
 
 3. Create the runtime config:
    ```bash
-   cp config.example.yaml config.yaml
+   mkdir -p .ls-wechat-article
+   cp config.example.yaml .ls-wechat-article/config.yaml
    ```
 
-4. Fill in these fields in `config.yaml`:
+4. Fill in these fields in `.ls-wechat-article/config.yaml` or `~/.liusir-skills/ls-wechat-article/config.yaml`:
    - `wechat.appid`
    - `wechat.secret`
 
@@ -139,9 +142,9 @@ Read files on demand. Do not load everything upfront.
 | `references/wechat-constraints.md` | WeChat rendering constraints |
 | `references/cli-reference.md` | CLI command reference |
 | `references/skill-maintenance.md` | Skill maintenance and validation rules |
-| `clients/{client}/style.yaml` | Client voice, default theme, and image defaults |
-| `clients/{client}/history.yaml` | Publish history and analytics |
-| `clients/{client}/playbook.md` | Client-specific writing playbook |
+| `{runtime_root}/clients/{client}/style.yaml` | Client voice, default theme, and image defaults |
+| `{runtime_root}/clients/{client}/history.yaml` | Publish history and analytics |
+| `{runtime_root}/clients/{client}/playbook.md` | Client-specific writing playbook |
 | `toolkit/dist/*.js` | Built CLI entrypoints |
 | `scripts/*.py` | Topic and SEO helper scripts |
 
@@ -171,14 +174,15 @@ Treat `--step N` as an explicit routing and pause directive.
 1. Read `references/writing-guide.md` before drafting.
 2. Keep the H1 title concise and WeChat-friendly.
 3. The digest must not repeat the title.
-4. Respect the blacklist and tone fields in `clients/{client}/style.yaml`.
+4. Respect the blacklist and tone fields in `{runtime_root}/clients/{client}/style.yaml`.
 5. Route from Step 1 based on the actual input type instead of forcing the full pipeline every time.
 6. Respect explicit `--step` routing and stop at that step.
 7. Before generating visuals, ask about image scope, style, and inline image density unless the user already specified them.
-8. Before preview or publish, ask for a theme or explicitly state the chosen theme.
-9. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
-10. If publishing fails, fall back to local preview instead of stopping the workflow.
-11. Use configured image providers only: Gemini, OpenAI, Doubao, or Qwen.
+8. In Step 6, the agent must choose the explicit cover type and explicit inline targets before calling toolkit commands. Do not let the toolkit infer them from article content.
+9. Before preview or publish, ask for a theme or explicitly state the chosen theme.
+10. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
+11. If publishing fails, fall back to local preview instead of stopping the workflow.
+12. Use configured image providers only: Gemini, OpenAI, Doubao, or Qwen.
 
 ## Pipeline Overview
 
@@ -222,7 +226,7 @@ Operational tasks for this skill include:
 
 See `references/operations.md` for detailed procedures.
 
-If `clients/{client}/` does not exist, do not silently invent a full client profile. Follow the onboarding guidance and template references defined in the operational docs.
+If `{runtime_root}/clients/{client}/` does not exist, do not silently invent a full client profile. Follow the onboarding guidance and template references defined in the operational docs.
 
 ## Gotchas — Common Failure Patterns
 

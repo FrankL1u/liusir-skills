@@ -12,9 +12,10 @@
 
 import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { pathToFileURL } from 'node:url';
 
 import { WeChatConverter, previewHtml } from './converter.js';
 import {
@@ -31,7 +32,7 @@ import {
 } from './theme-engine.js';
 import { getAccessToken, uploadImage, uploadThumb } from './wechat-api.js';
 import { createDraft } from './publisher.js';
-import { illustrateMarkdown } from './illustration-workflow.js';
+import { illustrateMarkdown, type IllustrateTargetInput } from './illustration-workflow.js';
 import { generateArticleCover } from './cover-workflow.js';
 import { recordPublishHistory } from './history.js';
 import {
@@ -39,24 +40,17 @@ import {
   parseBenchmarkStyles,
   runStyleBenchmark,
 } from './style-benchmark.js';
+import { findRuntimeConfigPath } from './runtime-paths.js';
 
 // --- Config Loading ---
 
 import { existsSync } from 'node:fs';
 import { parse as parseYaml } from 'yaml';
-import { dirname, join } from 'node:path';
-
-const CONFIG_PATHS = [
-  join(process.cwd(), 'config.yaml'),
-  join(dirname(import.meta.url.replace('file://', '')), '..', '..', 'config.yaml'),
-  join(dirname(import.meta.url.replace('file://', '')), '..', 'config.yaml'),
-];
 
 function loadConfig(): Record<string, unknown> {
-  for (const p of CONFIG_PATHS) {
-    if (existsSync(p)) {
-      return parseYaml(readFileSync(p, 'utf-8')) || {};
-    }
+  const configPath = findRuntimeConfigPath();
+  if (configPath && existsSync(configPath)) {
+    return parseYaml(readFileSync(configPath, 'utf-8')) || {};
   }
   return {};
 }
@@ -104,6 +98,32 @@ async function resolveCoverPath(explicitCover: string | undefined, images: strin
   return existsSync(imagePath) ? imagePath : undefined;
 }
 
+function parseIllustrationTargets(specs: string[] | undefined): IllustrateTargetInput[] {
+  if (!specs?.length) {
+    throw new Error('At least one --target "<section heading>::<inlineType>" value is required.');
+  }
+
+  return specs.map(spec => {
+    const separatorIndex = spec.lastIndexOf('::');
+    if (separatorIndex <= 0 || separatorIndex === spec.length - 2) {
+      throw new Error(`Invalid --target value: ${spec}. Expected "<section heading>::<inlineType>".`);
+    }
+
+    const heading = spec.slice(0, separatorIndex).trim();
+    const inlineType = spec.slice(separatorIndex + 2).trim();
+    if (!heading || !inlineType) {
+      throw new Error(`Invalid --target value: ${spec}. Expected "<section heading>::<inlineType>".`);
+    }
+
+    return { heading, inlineType };
+  });
+}
+
+function buildPreviewBaseHref(inputPath: string): string {
+  const directoryUrl = pathToFileURL(dirname(resolve(inputPath))).href;
+  return directoryUrl.endsWith('/') ? directoryUrl : `${directoryUrl}/`;
+}
+
 // --- Commands ---
 
 const program = new Command();
@@ -136,7 +156,7 @@ program
     });
 
     const result = converter.convertFile(input);
-    const fullHtml = previewHtml(result.html, converter.getTheme());
+    const fullHtml = previewHtml(result.html, converter.getTheme(), buildPreviewBaseHref(input));
 
     const outputPath = opts.output || input.replace(/\.md$/, '.html');
     writeFileSync(outputPath, fullHtml, 'utf-8');
@@ -287,7 +307,7 @@ program
   .option('--client <name>', 'Client/output namespace', 'default')
   .option('--provider <name>', 'Image provider: gemini, openai, doubao, qwen')
   .option('--style <text>', 'Cover style direction or configured style key', 'follow article tone')
-  .option('--type <key>', 'Cover type override: hero, conceptual, typography, metaphor, scene, minimal')
+  .requiredOption('--type <key>', 'Explicit cover type: hero, conceptual, typography, metaphor, scene, minimal')
   .option('--color <hex>', 'Accent color used in prompts', DEFAULT_COLOR)
   .action(async (input: string, opts) => {
     const result = await generateArticleCover({
@@ -314,10 +334,8 @@ program
   .option('--client <name>', 'Client/output namespace', 'default')
   .option('--provider <name>', 'Image provider: gemini, openai, doubao, qwen')
   .option('--style <text>', 'Image style direction', 'follow article tone')
-  .option('--density <level>', 'Inline image density: minimal, balanced, per-section, custom', 'balanced')
+  .requiredOption('--target <spec...>', 'Explicit inline targets in the form "<section heading>::<inlineType>"')
   .option('--color <hex>', 'Accent color used in prompts', DEFAULT_COLOR)
-  .option('--max-images <n>', 'Maximum inline images to insert')
-  .option('--min-section-chars <n>', 'Minimum section length for image insertion')
   .action(async (input: string, opts) => {
     const result = await illustrateMarkdown({
       input,
@@ -325,10 +343,8 @@ program
       client: opts.client,
       provider: opts.provider,
       style: opts.style,
-      density: opts.density,
       color: opts.color,
-      maxImages: opts.maxImages ? parseInt(opts.maxImages) : undefined,
-      minSectionChars: opts.minSectionChars ? parseInt(opts.minSectionChars) : undefined,
+      targets: parseIllustrationTargets(opts.target as string[]),
     });
 
     console.log(`Output: ${result.outputPath}`);
@@ -414,7 +430,7 @@ program
       });
 
       const result = converter.convertFile(input);
-      const fullHtml = previewHtml(result.html, converter.getTheme());
+      const fullHtml = previewHtml(result.html, converter.getTheme(), buildPreviewBaseHref(input));
 
       const outputPath = input.replace(/\.md$/, `.${t.key}.html`);
       writeFileSync(outputPath, fullHtml, 'utf-8');

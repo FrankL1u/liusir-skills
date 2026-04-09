@@ -1,0 +1,47 @@
+styles:
+  clean-grid:
+    summary: "Minimal hand-drawn knowledge-card style with strong whitespace and clean structure"
+    use_for: ["knowledge card", "structured note", "workflow note", "list note"]
+  study-board:
+    summary: "Dense handwritten study-sheet style with annotations and highlight marks"
+    use_for: ["case breakdown", "study note", "framework summary"]
+  contrast-poster:
+    summary: "Bold poster-like editorial style with limited colors and strong focal tension"
+    use_for: ["judgment note", "opinion note", "short conclusion note", "pitfall note"]
+  handwritten-flow:
+    summary: "Educational chalkboard style for teaching, process, and tutorial explanation"
+    use_for: ["step note", "process note", "operational note"]
+
+layouts:
+  sparse:
+    summary: "Low information density and maximum visual impact"
+  balanced:
+    summary: "Standard 3-4 block social-card layout"
+  dense:
+    summary: "High information density for knowledge-heavy slides"
+  list:
+    summary: "Enumeration or ranking layout"
+  comparison:
+    summary: "Side-by-side contrast layout"
+  flow:
+    summary: "Process and step-sequence layout"
+
+presets:
+  knowledge-card:
+    style: clean-grid
+    layout: dense
+  checklist:
+    style: clean-grid
+    layout: list
+  tutorial:
+    style: handwritten-flow
+    layout: flow
+  study-guide:
+    style: study-board
+    layout: dense
+  poster:
+    style: contrast-poster
+    layout: sparse
+  editorial:
+    style: contrast-poster
+    layout: balanced

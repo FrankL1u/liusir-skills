@@ -6,16 +6,17 @@ Use this file for setup, publishing support, analytics, and edit-learning workfl
 
 1. Install toolkit dependencies with `cd toolkit && npm install && npm run build`
 2. Install Python helpers with `pip install -r requirements.txt`
-3. Copy `config.example.yaml` to `config.yaml`
-4. Ask the user for WeChat credentials:
+3. Create `./.ls-wechat-article/` or `~/.liusir-skills/ls-wechat-article/`
+4. Copy `config.example.yaml` to `{runtime_root}/config.yaml`
+5. Ask the user for WeChat credentials:
    - `wechat.appid`
    - `wechat.secret`
-5. Ask about optional image provider keys:
+6. Ask about optional image provider keys:
    - `gemini`
    - `openai`
    - `doubao`
    - `qwen`
-6. Add the current public IP to the WeChat API whitelist
+7. Add the current public IP to the WeChat API whitelist
 
 Store the configuration once and do not ask again unless the configuration is missing or invalid.
 
@@ -29,7 +30,7 @@ When the user says:
 
 the agent should treat this as a client corpus / writing-profile task, not a drafting task.
 
-If `clients/{client}/` does not exist, proactively ask the user how they want to initialize it before continuing.
+If `{runtime_root}/clients/{client}/` does not exist, proactively ask the user how they want to initialize it before continuing.
 
 Recommended options:
 
@@ -39,18 +40,18 @@ Recommended options:
 
 Minimum structure to create:
 
-- `clients/{client}/style.yaml`
-- `clients/{client}/history.yaml`
-- `clients/{client}/playbook.md`
-- `clients/{client}/corpus/`
-- `clients/{client}/lessons/`
-- `clients/{client}/themes/`
+- `{runtime_root}/clients/{client}/style.yaml`
+- `{runtime_root}/clients/{client}/history.yaml`
+- `{runtime_root}/clients/{client}/playbook.md`
+- `{runtime_root}/clients/{client}/corpus/`
+- `{runtime_root}/clients/{client}/lessons/`
+- `{runtime_root}/clients/{client}/themes/`
 
 Use `references/style-template.md` as the source template for `style.yaml`.
 
 ## Corpus ingestion
 
-`clients/{client}/corpus/` is a reference-article directory.
+`{runtime_root}/clients/{client}/corpus/` is a reference-article directory.
 Use it to store:
 
 - representative historical articles written in this client's style
@@ -64,7 +65,7 @@ When the user asks to:
 - `build playbook`
 - `喂语料`
 
-the agent should help place suitable Markdown articles into `clients/{client}/corpus/`.
+the agent should help place suitable Markdown articles into `{runtime_root}/clients/{client}/corpus/`.
 
 If `corpus/` contains 20+ useful articles, run:
 
@@ -84,7 +85,7 @@ node dist/build-playbook.js --client demo
 node dist/fetch-stats.js --client demo --days 7
 ```
 
-This reads recent WeChat article metrics and updates `clients/{client}/history.yaml`.
+This reads recent WeChat article metrics and updates `{runtime_root}/clients/{client}/history.yaml`.
 
 ## Edit-learning
 
@@ -102,5 +103,5 @@ Every 5 accumulated lesson files should trigger a playbook refresh workflow.
 node dist/build-playbook.js --client demo
 ```
 
-This scans `clients/{client}/corpus/` and prints the statistics and analysis prompts needed to refresh `playbook.md`.
+This scans `{runtime_root}/clients/{client}/corpus/` and prints the statistics and analysis prompts needed to refresh `playbook.md`.
 When enough `lessons/` have accumulated, the agent should also use `learn-edits --summarize` as an input to the playbook refresh process.

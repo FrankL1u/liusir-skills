@@ -519,7 +519,7 @@ If Impeccable is installed, run `/polish`. Otherwise, perform a final quality pa
 }
 ```
 
-Storage path: `{skill_dir}/clients/{client}/themes/<id>.json`, and update `clients/{client}/themes/_index.json` index.
+Storage path: `{runtime_root}/clients/{client}/themes/<id>.json`, and update `{runtime_root}/clients/{client}/themes/_index.json` index.
 
 ---
 

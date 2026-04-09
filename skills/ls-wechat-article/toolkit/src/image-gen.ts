@@ -5,16 +5,13 @@
  * Fallback chain: API generation -> Nano Banana prompt library -> prompt-only output
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { basename, dirname, extname, resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_DIR = resolve(__dirname, '../..');
+import { findRuntimeConfigPath, SKILL_ROOT } from './runtime-paths.js';
 const NANO_BANANA_REFS = resolve(
-  PROJECT_DIR,
+  SKILL_ROOT,
   'toolkit',
   '.claude',
   'skills',
@@ -24,18 +21,25 @@ const NANO_BANANA_REFS = resolve(
 
 const SIZE_MAP: Record<string, Record<string, string>> = {
   cover: {
-    gemini: '16:9',
+    gemini: '2.35:1',
     openai: '1536x1024',
     doubao: '1280x544',
-    qwen: '2688*1536',
+    qwen: '1880*800',
   },
   article: {
     gemini: '16:9',
     openai: '1536x1024',
     doubao: '1280x720',
-    qwen: '2048*2048',
+    qwen: '2048*1152',
   },
 };
+
+const TARGET_ASPECT_RATIOS = {
+  cover: 2.35,
+  article: 16 / 9,
+} as const;
+
+const ASPECT_TOLERANCE = 0.002;
 
 interface ProviderConfig {
   api_key?: string;
@@ -88,13 +92,91 @@ type GenerateFn = (
   baseUrl?: string,
 ) => Promise<Buffer>;
 
+function getTargetAspectRatio(size: 'cover' | 'article'): number {
+  return TARGET_ASPECT_RATIOS[size];
+}
+
+export function needsAspectNormalization(width: number, height: number, targetRatio: number): boolean {
+  if (width <= 0 || height <= 0 || targetRatio <= 0) return false;
+  return Math.abs(width / height - targetRatio) > ASPECT_TOLERANCE;
+}
+
+export function calculateAspectCrop(width: number, height: number, targetRatio: number): { width: number; height: number } {
+  if (width <= 0 || height <= 0 || targetRatio <= 0) {
+    throw new Error('width, height, and targetRatio must be positive numbers');
+  }
+
+  const currentRatio = width / height;
+  if (!needsAspectNormalization(width, height, targetRatio)) {
+    return { width, height };
+  }
+
+  if (currentRatio > targetRatio) {
+    return {
+      width: Math.max(1, Math.min(width, Math.round(height * targetRatio))),
+      height,
+    };
+  }
+
+  return {
+    width,
+    height: Math.max(1, Math.min(height, Math.round(width / targetRatio))),
+  };
+}
+
+function parseSipsDimensions(output: string): { width: number; height: number } | null {
+  const widthMatch = output.match(/pixelWidth:\s*(\d+)/);
+  const heightMatch = output.match(/pixelHeight:\s*(\d+)/);
+  if (!widthMatch || !heightMatch) return null;
+
+  const width = Number(widthMatch[1]);
+  const height = Number(heightMatch[1]);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+  return { width, height };
+}
+
+function normalizeGeneratedImageAspect(filePath: string, size: 'cover' | 'article') {
+  const sipsPath = '/usr/bin/sips';
+  if (!existsSync(filePath) || !existsSync(sipsPath)) return;
+
+  try {
+    const metadata = execFileSync(
+      sipsPath,
+      ['-g', 'pixelWidth', '-g', 'pixelHeight', filePath],
+      { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    const dimensions = parseSipsDimensions(metadata);
+    if (!dimensions) return;
+
+    const targetRatio = getTargetAspectRatio(size);
+    if (!needsAspectNormalization(dimensions.width, dimensions.height, targetRatio)) return;
+
+    const crop = calculateAspectCrop(dimensions.width, dimensions.height, targetRatio);
+    if (crop.width === dimensions.width && crop.height === dimensions.height) return;
+
+    const extension = extname(filePath);
+    const stem = extension ? filePath.slice(0, -extension.length) : filePath;
+    const tempPath = `${stem}.normalized${extension || '.png'}`;
+    execFileSync(
+      sipsPath,
+      ['-c', String(crop.height), String(crop.width), filePath, '--out', tempPath],
+      { stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    writeFileSync(filePath, readFileSync(tempPath));
+    unlinkSync(tempPath);
+    console.error(
+      `[INFO] 归一化图片比例: ${dimensions.width}x${dimensions.height} -> ${crop.width}x${crop.height}`,
+    );
+  } catch (error) {
+    console.error(`[WARN] 图片比例归一化失败，保留原图: ${error}`);
+  }
+}
+
 function loadConfig(): { image: ImageConfig } {
-  for (const name of ['config.yaml', 'config.example.yaml']) {
-    const path = resolve(PROJECT_DIR, name);
-    if (existsSync(path)) {
-      const raw = parseYaml(readFileSync(path, 'utf-8')) ?? {};
-      return { image: raw.image ?? {} };
-    }
+  const path = findRuntimeConfigPath();
+  if (path && existsSync(path)) {
+    const raw = parseYaml(readFileSync(path, 'utf-8')) ?? {};
+    return { image: raw.image ?? {} };
   }
   return { image: {} };
 }
@@ -468,6 +550,7 @@ async function generateFromArgs(args: CliArgs): Promise<ImageGenResult> {
       providerConfig.base_url,
     );
     writeFileSync(args.output, bytes);
+    normalizeGeneratedImageAspect(args.output, args.size);
     console.error(`[INFO] 图片已保存: ${args.output} (${(bytes.length / 1024).toFixed(1)} KB)`);
     return { status: 'ok', source: providerName, file: args.output };
   } catch (error) {

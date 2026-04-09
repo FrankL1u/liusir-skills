@@ -2,7 +2,7 @@
 
 ## Step 1: Load client configuration
 
-Read `clients/{client}/style.yaml`.
+Read `{runtime_root}/clients/{client}/style.yaml`.
 
 Routing:
 
@@ -33,7 +33,7 @@ Preferred order:
 
 Execution notes:
 
-- When TrendRadar is enabled and reachable in `config.yaml`, proactively ask the user whether Step 2 should use TrendRadar or the general hot-board script
+- When TrendRadar is enabled and reachable in `{runtime_root}/config.yaml`, proactively ask the user whether Step 2 should use TrendRadar or the general hot-board script
 - Prefer `AskUserQuestion` when the host provides it; otherwise ask a concise plain-text question
 - Only auto-fall back to `scripts/fetch_hotspots.py` when TrendRadar is unavailable or unreachable
 - `scripts/fetch_hotspots.py` may be slower because some upstream platforms can return transient errors and trigger built-in retries
@@ -44,7 +44,7 @@ Execution notes:
 
 For every source, filter by client fit:
 
-- match against `clients/{client}/style.yaml` topics
+- match against `{runtime_root}/clients/{client}/style.yaml` topics
 - prefer items that can lead to a strong point of view
 - discard general news with no natural bridge to the client's audience
 
@@ -74,12 +74,12 @@ Use `references/frameworks.md`.
 
 ## Step 4: Article drafting
 
-Read `references/writing-guide.md` and `clients/{client}/playbook.md` if it exists.
+Read `references/writing-guide.md` and `{runtime_root}/clients/{client}/playbook.md` if it exists.
 
 - Draft the article to match the selected framework
 - Respect blacklist and tone settings
 - Keep the article useful even without images or special formatting
-- Save to `output/{client}/{YYYY-MM-DD}-{title-slug}/article.md`
+- Save to `{runtime_root}/output/{client}/{YYYY-MM-DD}-{title-slug}/article.md`
 
 ## Step 5: SEO and de-AI pass
 
@@ -114,6 +114,14 @@ Ask the user about:
    - `per-section` -> try to illustrate each strong section
    - `custom` -> user specifies image count
 
+After that intake, the agent must make the actual visual decisions before invoking the CLI:
+
+- choose one explicit `cover type`
+- choose the exact inline target sections
+- choose one explicit `inline type` for each target section
+
+Do not ask the toolkit to infer article type, image type, or target sections from the Markdown.
+
 Defaulting rules:
 
 - If the user wants visuals but gives no style direction, default to `follow article tone`
@@ -127,20 +135,21 @@ Write prompts and generated images into the article bundle directory.
 Command mapping:
 
 - `cover + inline images`
-  - run `cli.js cover` with the selected `--style`
-  - then run `cli.js illustrate` with the selected `--style` and `--density`
+  - run `cli.js cover` with the selected `--style` and explicit `--type`
+  - then run `cli.js illustrate` with the selected `--style` and explicit `--target "{heading}::{inline_type}"` entries
 - `cover only`
-  - run `cli.js cover` with the selected `--style`
+  - run `cli.js cover` with the selected `--style` and explicit `--type`
 - `inline only`
-  - run `cli.js illustrate` with the selected `--style` and `--density`
+  - run `cli.js illustrate` with the selected `--style` and explicit `--target "{heading}::{inline_type}"` entries
 - `no images`
   - skip Step 6 and continue to Step 7
 
 Parameter mapping:
 
 - pass the chosen style direction to `--style`
-- pass inline density to `cli.js illustrate --density {minimal|balanced|per-section|custom}`
-- only pass explicit `--max-images` when the user selected `custom` and gave a number
+- pass the agent-chosen cover type to `cli.js cover --type {hero|conceptual|typography|metaphor|scene|minimal}`
+- pass each agent-chosen inline target to `cli.js illustrate --target "{heading}::{framework|flowchart|comparison|infographic|scene|timeline}"`
+- use inline density only to decide how many targets to choose; do not pass density to the CLI as a substitute for explicit targets
 - do not add extra orchestration layers; the agent should call the existing `cover` and `illustrate` commands directly
 
 Preferred configured styles:
@@ -185,7 +194,7 @@ Fallback:
 
 ## Step 8: History and learning
 
-- `cli.js publish` appends draft metadata to `clients/{client}/history.yaml` after draft creation succeeds
-- Client inference comes from the markdown path under `output/{client}/...`; if the path is custom, the agent may pass `--client {client}` explicitly
+- `cli.js publish` appends draft metadata to `{runtime_root}/clients/{client}/history.yaml` after draft creation succeeds
+- Client inference comes from the markdown path under `{runtime_root}/output/{client}/...`; if the path is custom, the agent may pass `--client {client}` explicitly
 - Use `fetch-stats.js` later to backfill stats
 - Use `learn-edits.js` and `build-playbook.js` to improve future drafts

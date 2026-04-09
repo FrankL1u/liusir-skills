@@ -1,6 +1,6 @@
 # Client Configuration Template
 
-Copy `clients/demo/style.yaml` when onboarding a new client.
+Copy the packaged example `clients/demo/style.yaml` into your runtime root when onboarding a new client.
 
 ```yaml
 name: "Client Name"
@@ -30,12 +30,6 @@ image_system:
   defaults:
     cover_style: "editorial"
     inline_style: "editorial"
-    cover_type: "conceptual"
-    inline_type_by_content:
-      trend_judgment: "framework"
-      methodology_framework: "framework"
-      tool_review: "comparison"
-      personal_narrative: "scene"
 author: "Author name"
 ```
 
@@ -45,7 +39,7 @@ Client `style.yaml` should only set the default public theme plus client-specifi
 ## Directory structure
 
 ```text
-clients/{client}/
+{runtime_root}/clients/{client}/
 ├── style.yaml
 ├── history.yaml
 ├── playbook.md

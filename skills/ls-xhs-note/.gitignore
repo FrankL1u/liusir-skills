@@ -1,0 +1,6 @@
+*.html
+.DS_Store
+config.yaml
+output/
+clients/
+toolkit/package-lock.json
