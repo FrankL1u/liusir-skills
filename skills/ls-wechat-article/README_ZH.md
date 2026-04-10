@@ -6,8 +6,8 @@
 
 | 你说 | Skill 会做什么 |
 |------|----------------|
-| `给 demo 写一篇公众号文章` | 走完整流程：选题 -> 写作 -> SEO -> 配图 -> 主题 -> 草稿箱 |
-| `把这篇 Markdown 发到草稿箱` | 跳过写作，直接排版并发布 |
+| `给 demo 写一篇公众号文章` | 走完整流程：选题 -> 框架与原型 -> 写作 -> 质检 -> 配图 -> 主题 -> 草稿箱 |
+| `把这篇 Markdown 发到草稿箱` | 跳过写作。若你没明确说不要改内容，仍会先做浅层质检再发布 |
 | `用 latepost-depth 主题预览` | 生成本地 HTML 预览 |
 | `看看最近 7 天文章表现` | 读取微信 datacube 数据并回填 `history.yaml` |
 | `根据我的修改学习风格` | 对比草稿与终稿，写入 lessons |
@@ -96,9 +96,9 @@ trendradar:
 | Step 1 | 读取 client 配置并判断从哪一步开始 |
 | Step 2 | 如果没有明确 topic，就先获取热点信号 |
 | Step 3 | 选择文章选题 |
-| Step 3.5 | 选择文章框架 |
-| Step 4 | 生成文章草稿 |
-| Step 5 | 做 SEO 和去 AI 味优化 |
+| Step 3.5 | 选择框架、文章原型和输出 shape |
+| Step 4 | 按原型约束生成文章草稿 |
+| Step 5 | 执行 `5A auto-fix` 和 `5B editorial QA` |
 | Step 6 | 决定图片范围、图片风格和正文图数量 |
 | Step 7 | 决定主题，生成 HTML，预览或发布到草稿箱 |
 | Step 8 | 更新 `history.yaml`，回填 stats，学习改稿，刷新 playbook |
@@ -165,7 +165,7 @@ trendradar:
 | 使用方式 | 什么时候用 | 你可以怎么说 |
 |----------|------------|--------------|
 | 从 topic 开始 | 你只有一个想写的主题，还没有文章草稿 | `帮我写一篇关于 AI 编程的公众号文章` |
-| 从 Markdown 开始 | 你已经有现成 Markdown，只需要排版、预览或发布 | `把这篇 Markdown 排版成公众号样式并发布到草稿箱` |
+| 从 Markdown 开始 | 你已经有现成 Markdown，只需要排版、预览或发布。默认仍会做浅层质检，除非你明确说 `仅发布` 或 `不要改内容` | `把这篇 Markdown 排版成公众号样式并发布到草稿箱` |
 | 从指定步骤开始 | 你不想走完整流程，只想从某一步接着做 | `从 --step 3.5 开始，我想先选框架` |
 | 先做图片决策 | 你想单独先决定图片范围、风格、配图数量和显式图片目标 | `从 --step 6 开始，我想先决定图片配置` |
 | 先做主题与发布 | 你已经有文章，只想确认主题、预览或发布 | `从 --step 7 开始，先告诉我会用什么主题` |
@@ -182,6 +182,9 @@ node dist/cli.js preview article.md --theme wechat-tech
 
 # 发布
 node dist/cli.js publish article.md --theme latepost-depth
+
+# 文章质检
+node dist/cli.js editorial-qa article.md --client demo
 
 # 主题对比预览
 node dist/cli.js theme-preview article.md
@@ -203,6 +206,7 @@ node dist/build-playbook.js --client demo
 ```
 
 发布时如果不传 `--cover`，工具会尝试使用正文第一张图片作为草稿封面。  
+`editorial-qa` 会把 `quality-report.md` 写进文章 bundle，让 Step 5 的判断有明确产物，而不是只留在 agent 口头说明里。  
 `illustrate` 默认会把本次文章产物写入 `{runtime_root}/output/{client}/{date}-{title-slug}/`，其中包含 `article.md`、`assets/` 和 `prompts/`。toolkit 不再自己决定该配哪些小节、该用什么图片类型；这些都要由 agent 先选好，再显式传入 `--target`。
 
 公共图片风格库位于 [references/image-system.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml)。运行态 client 数据位于 `{runtime_root}/clients/{client}/style.yaml`，只配置默认主题、写作画像和 client 覆盖项。

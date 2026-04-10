@@ -273,6 +273,8 @@ export class WeChatConverter {
   private applyWeChatFixes($: cheerio.CheerioAPI): void {
     const textColor = '#333333';
 
+    this.flattenListsForWeChat($);
+
     // 确保所有 p 标签有显式颜色（跳过代码块内的）
     $('p').each((_, p) => {
       if ($(p).closest('pre[data-codeblock]').length) return;
@@ -295,6 +297,56 @@ export class WeChatConverter {
     $('[class]').each((_, elem) => {
       // 保留 class 以防有用，但微信会忽略它们
     });
+  }
+
+  // WeChat draft rendering is unstable with native ul/li, so flatten them
+  // into paragraph-based bullets before publish and preview.
+  private flattenListsForWeChat($: cheerio.CheerioAPI): void {
+    const lists = $('ul, ol').toArray().reverse();
+    const baseTextStyle = this.theme.styles.liText || this.theme.styles.p;
+
+    for (const list of lists) {
+      const $list = $(list);
+      const isOrdered = list.tagName === 'ol';
+      const isTaskList = $list.hasClass('contains-task-list');
+      const items = $list.children('li').toArray();
+
+      if (!items.length) continue;
+
+      const paragraphs = items.map((item, index) => {
+        const marker = isTaskList ? '' : (isOrdered ? `${index + 1}.` : '•');
+        const contentHtml = this.normalizeListItemHtml($, item);
+        const paragraphStyle = [
+          baseTextStyle,
+          'margin: 14px 0 !important',
+          marker ? 'padding-left: 1.6em' : '',
+          marker ? 'text-indent: -1.6em' : '',
+        ].filter(Boolean).join('; ');
+        const markerHtml = marker
+          ? `<span style="display: inline; font-weight: 600; margin-right: 0.45em;">${marker}</span>`
+          : '';
+        return `<p style="${paragraphStyle}">${markerHtml}${contentHtml}</p>`;
+      });
+
+      $list.replaceWith(paragraphs.join(''));
+    }
+  }
+
+  private normalizeListItemHtml($: cheerio.CheerioAPI, item: unknown): string {
+    const clone = $(item as any).clone();
+    let html = clone.html() || '';
+
+    html = html
+      .replace(/<\/p>\s*<p[^>]*>/gi, '<br><br>')
+      .replace(/<p[^>]*>/gi, '')
+      .replace(/<\/p>/gi, '')
+      .replace(/<\/div>\s*<div[^>]*>/gi, '<br><br>')
+      .replace(/<div[^>]*>/gi, '')
+      .replace(/<\/div>/gi, '')
+      .trim();
+
+    if (html) return html;
+    return clone.text().trim();
   }
 
   private addLogo($: cheerio.CheerioAPI): void {

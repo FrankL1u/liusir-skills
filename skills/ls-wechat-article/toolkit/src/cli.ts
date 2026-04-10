@@ -35,12 +35,14 @@ import { createDraft } from './publisher.js';
 import { illustrateMarkdown, type IllustrateTargetInput } from './illustration-workflow.js';
 import { generateArticleCover } from './cover-workflow.js';
 import { recordPublishHistory } from './history.js';
+import { loadClientStyle, resolvePublishAuthor } from './client-style.js';
 import {
   parseBenchmarkArticleTypes,
   parseBenchmarkStyles,
   runStyleBenchmark,
 } from './style-benchmark.js';
-import { findRuntimeConfigPath } from './runtime-paths.js';
+import { findRuntimeConfigPath, inferClientFromRuntimeArticlePath } from './runtime-paths.js';
+import { runEditorialQa } from './editorial-qa.js';
 
 // --- Config Loading ---
 
@@ -193,11 +195,13 @@ program
   .action(async (input: string, opts) => {
     const cfg = loadConfig();
     const wechatCfg = (cfg.wechat as Record<string, string>) || {};
+    const resolvedClient = opts.client || inferClientFromRuntimeArticlePath(input) || undefined;
+    const clientStyle = loadClientStyle(resolvedClient);
 
     const appid = opts.appid || wechatCfg.appid;
     const secret = opts.secret || wechatCfg.secret;
     const themeKey = (opts.theme || (cfg.theme as string) || DEFAULT_THEME) as ThemeKey;
-    const author = opts.author || wechatCfg.author;
+    const author = resolvePublishAuthor(opts.author, wechatCfg.author, clientStyle);
 
     if (!appid || !secret) {
       console.error('Error: --appid and --secret required (or set in config.yaml)');
@@ -273,7 +277,7 @@ program
       console.log(`\nDraft created! media_id: ${draft.mediaId}`);
 
       const historyResult = recordPublishHistory({
-        client: opts.client,
+        client: resolvedClient,
         inputPath: input,
         title,
         digest: result.digest,
@@ -389,6 +393,26 @@ program
     console.log(`Styles: ${result.styles.join(', ')}`);
     console.log(`Article types: ${result.articleTypes.join(', ')}`);
     console.log(`Cells: ${result.cells.length}`);
+  });
+
+program
+  .command('editorial-qa')
+  .description('Run shallow editorial auto-fix and write a quality report')
+  .argument('<input>', 'Markdown file path')
+  .option('--client <client>', 'Client key for bundle output when input is outside runtime output')
+  .action(async (input: string, opts) => {
+    const result = await runEditorialQa({
+      input,
+      client: opts.client,
+    });
+
+    console.log(`Title: ${result.title}`);
+    console.log(`Archetype: ${result.archetype}`);
+    console.log(`Output shape: ${result.outputShape}`);
+    console.log(`Article: ${result.articlePath}`);
+    console.log(`Quality report: ${result.reportPath}`);
+    console.log(`Auto-fix changes: ${result.changes.length}`);
+    console.log(`Warnings: ${result.warnings.length}`);
   });
 
 program

@@ -6,8 +6,8 @@ Universal WeChat Official Account workflow skill. It can draft articles, format 
 
 | You say | The skill does |
 |---------|----------------|
-| `Write a WeChat article for demo` | Runs the full workflow: topic -> draft -> SEO -> images -> theme -> draft publish |
-| `Publish this Markdown to WeChat drafts` | Skips drafting and formats + publishes only |
+| `Write a WeChat article for demo` | Runs the full workflow: topic -> framework + archetype -> draft -> editorial QA -> images -> theme -> draft publish |
+| `Publish this Markdown to WeChat drafts` | Skips drafting. If you did not forbid edits, it still runs shallow editorial QA before publish |
 | `Preview this article with latepost-depth` | Generates a local HTML preview |
 | `Show the last 7 days of article performance` | Fetches WeChat datacube stats and backfills `history.yaml` |
 | `Learn from my edits on this article` | Compares draft vs final and writes lessons |
@@ -96,9 +96,9 @@ Notes:
 | Step 1 | Load client config and route the request |
 | Step 2 | If no concrete topic is given, fetch topical signals |
 | Step 3 | Pick the article angle |
-| Step 3.5 | Pick the article framework |
-| Step 4 | Draft the article |
-| Step 5 | Run SEO and de-AI polish |
+| Step 3.5 | Pick the framework, article archetype, and output shape |
+| Step 4 | Draft with archetype-bound writing rules |
+| Step 5 | Run `5A auto-fix` and `5B editorial QA` |
 | Step 6 | Decide image scope, image style, inline image density, then convert that into explicit cover and inline targets |
 | Step 7 | Decide theme, generate HTML, preview or publish to drafts |
 | Step 8 | Update `history.yaml`, backfill stats, learn edits, refresh playbook |
@@ -165,7 +165,7 @@ If the user does not specify a theme, the workflow should either ask for one or 
 | Usage mode | When to use it | Example |
 |------------|----------------|---------|
 | Start from a topic | You have a topic but no draft yet | `Help me write a WeChat article about AI coding` |
-| Start from Markdown | You already have Markdown and only need formatting, preview, or publish | `Format this Markdown for WeChat and publish it to drafts` |
+| Start from Markdown | You already have Markdown and need formatting, preview, or publish. By default the skill still runs shallow editorial QA unless you say `publish only` or `do not change content` | `Format this Markdown for WeChat and publish it to drafts` |
 | Start from a specific step | You want to enter at a specific workflow step | `Start from --step 3.5 and help me choose a framework` |
 | Decide images first | You want to decide image scope, style, density, and explicit image targets before generation | `Start from --step 6 and let me decide image settings` |
 | Decide theme and publish | You already have the article and only need theme, preview, or publish | `Start from --step 7 and tell me which theme will be used` |
@@ -182,6 +182,9 @@ node dist/cli.js preview article.md --theme wechat-tech
 
 # Publish
 node dist/cli.js publish article.md --theme latepost-depth
+
+# Editorial QA
+node dist/cli.js editorial-qa article.md --client demo
 
 # Theme comparison
 node dist/cli.js theme-preview article.md
@@ -203,6 +206,7 @@ node dist/build-playbook.js --client demo
 ```
 
 If `--cover` is omitted during publish, the tool will try to use the first image in the article as the draft cover.
+`editorial-qa` writes `quality-report.md` into the article bundle and keeps Step 5 output explicit instead of hiding quality judgment inside the agent response.
 `illustrate` writes article output to `{runtime_root}/output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`. The toolkit no longer chooses sections or image types on its own; pass explicit `--target` entries from the agent.
 
 The shared image style library lives in [references/image-system.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml). Runtime client data lives under `{runtime_root}/clients/{client}/style.yaml` and only stores default theme, writing profile, and client-specific overrides.

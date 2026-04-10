@@ -41,3 +41,14 @@ export { analyzeDiff, type DiffAnalysis } from './learn-edits.js';
 export { latexToSvg, convertMathToHtml, processMathInHtml } from './math-processor.js';
 export { renderMermaidToPng, processMermaidBlocks, isMermaidAvailable } from './mermaid-processor.js';
 export { enhanceCodeBlocks } from './code-block-processor.js';
+export {
+  inferArticleArchetype,
+  autoFixEditorialIssues,
+  runEditorialQa,
+  type ArticleArchetype,
+  type OutputShape,
+  type EditorialInference,
+  type AutoFixResult,
+  type EditorialQaOptions,
+  type EditorialQaResult,
+} from './editorial-qa.js';
