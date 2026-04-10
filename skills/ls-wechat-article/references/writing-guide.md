@@ -5,6 +5,90 @@
 
 ---
 
+## Execution Defaults
+
+This guide now serves two writing shapes.
+Do not apply one uniform structure to every article.
+
+- `immersive_longform`
+  - default archetypes: `investigation`, `product_experience`, `phenomenon_analysis`
+  - default length: `2800-5000` Chinese characters
+  - default structure: `H1` plus `0-2` H2
+  - priority: scene opening, main-thread callback, emotional movement, lift
+- `structured_longform`
+  - default archetypes: `tool_share`, `methodology`
+  - default length: `2200-3800` Chinese characters
+  - default structure: `H1` plus `2-5` H2
+  - priority: actionability, clarity, SEO, explicit steps
+
+Common floor for both shapes:
+
+- keep one sharp Atomic Insight
+- keep the H1 concise and WeChat-friendly
+- digest must not repeat the title
+- single paragraphs should usually stay readable on mobile
+- at least one sentence should be screenshot-worthy
+- do not fake first-hand scenes, emotion, or evidence
+
+## Shape Rules
+
+### immersive_longform
+
+Use for articles that should feel like the reader is being pulled through a scene or idea.
+
+Required:
+
+- open from a concrete moment, scene, or recent sample
+- keep a visible main thread and return to it
+- allow fewer H2 and more narrative turns
+- land with a circular close, wider pattern, or culture/history lift
+
+Avoid:
+
+- mechanical listicles
+- over-structured `第一 / 第二 / 第三`
+- summary-first openings
+
+### structured_longform
+
+Use for articles where the reader wants to leave with a method, checklist, or tool path.
+
+Required:
+
+- keep `2-5` H2
+- make every section land one concrete action or judgment
+- move from example to pattern, not only pattern to pattern
+- if the archetype is `methodology`, state learning curve and failure point
+
+Avoid:
+
+- empty principles with no action
+- tools without use boundary
+- fake neatness that hides uncertainty
+
+## Step 5 Editing Scope
+
+### Auto-fix can handle
+
+- mechanical AI connectors
+- classroom or report-style transitions
+- generic tool names when a concrete tool already exists in the draft
+- hypothetical examples that need to be downgraded into explicit `未亲测` wording
+
+### Auto-fix must not handle
+
+- inventing first-hand experience
+- inventing data or examples
+- silently changing the article into a different archetype
+- heavy re-outline without user intent
+
+### Editorial QA must report
+
+- shape mismatch
+- missing archetype-specific elements
+- weak support or weak counterargument handling
+- lack of warmth, uniqueness, or flow
+
 ## The Core Problem
 
 Claude writes like a brilliant student who read everything but experienced nothing. Organized. Comprehensive. Balanced. Dead.

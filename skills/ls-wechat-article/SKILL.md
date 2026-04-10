@@ -133,6 +133,9 @@ Read files on demand. Do not load everything upfront.
 | `references/pipeline.md` | End-to-end execution detail |
 | `references/operations.md` | First-run setup, client onboarding, publishing support, analytics, and learning workflows |
 | `references/writing-guide.md` | Writing quality bar and de-AI rules |
+| `references/article-archetypes.md` | Archetype routing and shape binding |
+| `references/editorial-qa.md` | Step 5 report template and blocking rules |
+| `references/rewrite-examples.md` | Few-shot rewrite patterns for Step 5A |
 | `references/frameworks.md` | Article framework selection |
 | `references/topic-selection.md` | Topic scoring and angle selection |
 | `references/seo-rules.md` | Title, digest, tags, and SEO polish |
@@ -154,7 +157,8 @@ Read files on demand. Do not load everything upfront.
 
 - Move the workflow forward without pausing by default
 - Stop only when required input is missing, a step and its fallback both fail, or the workflow reaches an explicit user-decision boundary
-- If the user provides raw Markdown, skip drafting and go directly to formatting and publishing
+- If the user explicitly says `仅排版` / `仅发布` / `不要改内容`, skip directly to Step 7
+- If the user provides raw Markdown without that restriction, skip drafting but still run Step 5A and Step 5B before Step 7
 - If the user provides a concrete topic, skip hotspot mining and topic generation
 - Before image generation, ask once about image scope, style, and inline image density unless the user already specified them
 - Before preview or publish, ask for a theme or clearly state the auto-selected theme
@@ -172,17 +176,20 @@ Treat `--step N` as an explicit routing and pause directive.
 ## Critical Quality Rules
 
 1. Read `references/writing-guide.md` before drafting.
-2. Keep the H1 title concise and WeChat-friendly.
-3. The digest must not repeat the title.
-4. Respect the blacklist and tone fields in `{runtime_root}/clients/{client}/style.yaml`.
-5. Route from Step 1 based on the actual input type instead of forcing the full pipeline every time.
-6. Respect explicit `--step` routing and stop at that step.
-7. Before generating visuals, ask about image scope, style, and inline image density unless the user already specified them.
-8. In Step 6, the agent must choose the explicit cover type and explicit inline targets before calling toolkit commands. Do not let the toolkit infer them from article content.
-9. Before preview or publish, ask for a theme or explicitly state the chosen theme.
-10. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
-11. If publishing fails, fall back to local preview instead of stopping the workflow.
-12. Use configured image providers only: Gemini, OpenAI, Doubao, or Qwen.
+2. In Step 3.5, choose both `framework` and `article_archetype`, then bind `output_shape`.
+3. Keep the H1 title concise and WeChat-friendly.
+4. The digest must not repeat the title.
+5. Respect the blacklist and tone fields in `{runtime_root}/clients/{client}/style.yaml`.
+6. Route from Step 1 based on the actual input type instead of forcing the full pipeline every time.
+7. Respect explicit `--step` routing and stop at that step.
+8. Step 5 is two-stage: `5A auto-fix` then `5B editorial QA`.
+9. Step 5B must write `quality-report.md` beside the article bundle.
+10. Before generating visuals, ask about image scope, style, and inline image density unless the user already specified them.
+11. In Step 6, the agent must choose the explicit cover type and explicit inline targets before calling toolkit commands. Do not let the toolkit infer them from article content.
+12. Before preview or publish, ask for a theme or explicitly state the chosen theme.
+13. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
+14. If publishing fails, fall back to local preview instead of stopping the workflow.
+15. Use configured image providers only: Gemini, OpenAI, Doubao, or Qwen.
 
 ## Pipeline Overview
 
@@ -191,9 +198,9 @@ The workflow is organized as follows:
 1. Load client configuration and identify the input type
 2. Fetch topical signals when no concrete topic is provided
 3. Pick a topic angle
-4. Pick an article framework
-5. Draft the article with the writing guide
-6. Run SEO and de-AI polish
+4. Pick an article framework and article archetype
+5. Draft the article with archetype-bound writing rules
+6. Run `5A auto-fix` and `5B editorial QA`
 7. Ask about visuals and generate optional assets
 8. Format, preview, and publish to WeChat drafts
 9. Update history, analytics, and lessons
@@ -257,6 +264,9 @@ Use it when the goal is not just to generate an article, but to operate a repeat
 - Execution detail: `references/pipeline.md`
 - Operations and onboarding: `references/operations.md`
 - Writing quality: `references/writing-guide.md`
+- Archetype routing: `references/article-archetypes.md`
+- Editorial QA: `references/editorial-qa.md`
+- Rewrite examples: `references/rewrite-examples.md`
 - Framework selection: `references/frameworks.md`
 - Topic selection: `references/topic-selection.md`
 - SEO rules: `references/seo-rules.md`

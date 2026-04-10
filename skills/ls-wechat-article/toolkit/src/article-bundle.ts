@@ -28,6 +28,7 @@ export interface ArticleBundlePaths {
   articlePath: string;
   previewPath: string;
   coverPath: string;
+  qualityReportPath: string;
   assetsDir: string;
   promptsDir: string;
 }
@@ -47,6 +48,7 @@ export function createArticleBundlePaths(client: string, title: string): Article
     articlePath: join(bundleDir, 'article.md'),
     previewPath: join(bundleDir, 'preview.html'),
     coverPath: join(bundleDir, 'cover.png'),
+    qualityReportPath: join(bundleDir, 'quality-report.md'),
     assetsDir,
     promptsDir,
   };

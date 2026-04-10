@@ -7,6 +7,7 @@ All commands run from `{skill_dir}/toolkit/` after `npm run build`.
 ```bash
 node dist/cli.js preview {markdown_path} --theme {theme_key}
 node dist/cli.js publish {markdown_path} --theme {theme_key} [--client {client}]
+node dist/cli.js editorial-qa {markdown_path} [--client {client}]
 node dist/cli.js cover {markdown_path} --client {client} --style {follow article tone|editorial|blueprint|notion|warm|watercolor|scientific|lofi-doodle|multi-panel-manga|notebook-sketch|claymation} --type {hero|conceptual|typography|metaphor|scene|minimal} --provider {gemini|openai|doubao|qwen}
 node dist/cli.js illustrate {markdown_path} --client {client} --style {follow article tone|editorial|blueprint|notion|warm|watercolor|scientific|lofi-doodle|multi-panel-manga|notebook-sketch|claymation} --target "{section heading}::{framework|flowchart|comparison|infographic|scene|timeline}" [--target "..."] --provider {gemini|openai|doubao|qwen}
 node dist/cli.js theme-preview {markdown_path}
@@ -15,6 +16,7 @@ node dist/cli.js colors
 ```
 
 If `--cover` is omitted, publish will attempt to use the first image in the article as the draft cover.
+`editorial-qa` writes a shallow-fixed `article.md` and `quality-report.md`. When the input is already a standard bundle article, the report is written beside it. Otherwise it creates a bundle under `{runtime_root}/output/{client}/{date}-{title-slug}/`.
 `illustrate` inserts generated inline images under agent-selected `##` / `###` sections and writes a bundled article package under `{runtime_root}/output/{client}/{date}-{title-slug}/` by default.
 `publish` writes the draft metadata back to `{runtime_root}/clients/{client}/history.yaml` after draft creation succeeds. It infers `{client}` from the article path under `{runtime_root}/output/{client}/...`; use optional `--client` only when the markdown path does not follow the default bundle layout.
 

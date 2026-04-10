@@ -12,6 +12,7 @@
     "dev": "tsx src/cli.ts",
     "preview": "tsx src/cli.ts preview",
     "publish": "tsx src/cli.ts publish",
+    "editorial-qa": "tsx src/cli.ts editorial-qa",
     "illustrate": "tsx src/cli.ts illustrate",
     "style-benchmark": "tsx src/cli.ts style-benchmark",
     "themes": "tsx src/cli.ts themes",

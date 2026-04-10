@@ -24,6 +24,9 @@ Do not invent a separate high-level router in code unless a workflow step has cl
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/visual-prompts.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-style-config.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/cli-reference.md`
+- `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/article-archetypes.md`
+- `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/editorial-qa.md`
+- `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/rewrite-examples.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/theme-selection.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/clients/{client}/style.yaml`
@@ -78,7 +81,8 @@ Routing is defined in:
 If the user already provides Markdown:
 
 ```text
-Start from Step 7
+default: Step 5A -> Step 5B -> Step 7
+only if the user explicitly says publish-only / format-only / do-not-edit: Step 7
 ```
 
 ### Explicit step override
@@ -105,6 +109,16 @@ node dist/cli.js publish article.md --theme latepost-depth
 ```
 
 For publish, a valid cover is still required. If `--cover` is omitted, the command will only reuse the first article image when one already exists.
+
+### Editorial QA
+
+```bash
+node dist/cli.js editorial-qa article.md --client liusir2035
+```
+
+This writes:
+- fixed `article.md`
+- `quality-report.md`
 
 ### Generate cover
 
@@ -230,6 +244,7 @@ Default article bundle:
 ```text
 output/{client}/{date}-{title-slug}/
 ├── article.md
+├── quality-report.md
 ├── preview.html
 ├── cover.png
 ├── assets/

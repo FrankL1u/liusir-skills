@@ -7,7 +7,8 @@ Read `{runtime_root}/clients/{client}/style.yaml`.
 Routing:
 
 - If the client directory does not exist, proactively ask the user how they want to initialize the client, then continue with onboarding guidance from `references/operations.md`. 
-- If the user already provided raw Markdown, skip directly to Step 7
+- If the user explicitly says `仅排版` / `仅发布` / `不要改内容`, skip directly to Step 7
+- If the user already provided raw Markdown without that restriction, skip drafting but still run Step 5A and Step 5B before Step 7
 - If the user gave a concrete topic, skip Steps 2-3 and go directly to Step 3.5
 - If the user provided `--step N`, route directly to Step `N` and stop at that step's decision boundary
 
@@ -16,7 +17,8 @@ Routing:
 | User input | Skip | Start from |
 |------------|------|------------|
 | Specific topic | Steps 2-3 | Step 3.5 |
-| Raw Markdown | Steps 2-6 | Step 7 |
+| Raw Markdown with `仅排版` / `仅发布` / `不要改内容` | Steps 2-6 | Step 7 |
+| Raw Markdown without that restriction | Steps 2-4 | Step 5A |
 | `--step N` | Depends on `N` | Step `N` |
 
 ## Step 2: Topic intake
@@ -63,31 +65,57 @@ Use `references/topic-selection.md`.
 - In auto mode, select the strongest topic and continue
 - If invoked via `--step 3`, present the candidates and stop for user selection
 
-## Step 3.5: Framework choice
+## Step 3.5: Framework choice and archetype routing
 
-Use `references/frameworks.md`.
+Use `references/frameworks.md` and `references/article-archetypes.md`.
 
 - Generate framework proposals that match the selected topic
+- Classify the article into one `article_archetype`
+- Bind the archetype to one `output_shape`
 - Prefer the framework that best supports the topic's core insight and the client's voice
+- Fixed mapping:
+  - `investigation` / `product_experience` / `phenomenon_analysis` -> `immersive_longform`
+  - `tool_share` / `methodology` -> `structured_longform`
 - In auto mode, select the strongest framework and continue
-- If invoked via `--step 3.5`, present the proposals and stop for user selection
+- If invoked via `--step 3.5`, present the framework proposals plus the chosen archetype and stop for user selection
 
 ## Step 4: Article drafting
 
 Read `references/writing-guide.md` and `{runtime_root}/clients/{client}/playbook.md` if it exists.
 
-- Draft the article to match the selected framework
+- Draft the article to match the selected framework, `article_archetype`, and `output_shape`
 - Respect blacklist and tone settings
 - Keep the article useful even without images or special formatting
+- `immersive_longform`
+  - default to `2800-5000` Chinese characters
+  - allow `0-2` H2
+  - emphasize scene opening, main-thread callbacks, circular close, and culture/history lift
+- `structured_longform`
+  - default to `2200-3800` Chinese characters
+  - keep `2-5` H2
+  - every section must land one concrete action or judgment
+  - `methodology` drafts must explain learning curve and failure points
 - Save to `{runtime_root}/output/{client}/{YYYY-MM-DD}-{title-slug}/article.md`
 
-## Step 5: SEO and de-AI pass
+## Step 5A: Auto-fix
 
-Read `references/seo-rules.md`.
+Read `references/rewrite-examples.md`.
+
+- Only apply shallow, deterministic edits
+- Remove mechanical AI-sounding phrasing
+- Replace generic tool names with already-mentioned concrete tools
+- Rewrite hypothetical examples into explicit `未亲测` disclosures when no real scene exists
+- Surface over-symmetry or list-heavy pacing as warnings instead of silently restructuring the article
+
+## Step 5B: Editorial QA
+
+Read `references/seo-rules.md` and `references/editorial-qa.md`.
 
 - Optimize title, digest, and tags
-- Remove generic AI-sounding phrasing
 - Check rhythm, specificity, and section pacing
+- Write `quality-report.md` beside the article bundle
+- L3 and L4 warnings do not block Step 7
+- Only hard publish failures, missing title, or invalid structure can block Step 7
 
 ## Step 6: Visuals
 
@@ -191,6 +219,11 @@ Always publish directly to WeChat drafts when the workflow reaches this step. Do
 
 Fallback:
 - If publish fails, run `cli.js preview` and return the local preview path
+
+Editorial QA interaction:
+
+- If Step 5 produced only L3/L4 warnings, continue
+- If Step 5 produced a fixed article and `quality-report.md`, publish the fixed article, not the pre-fix draft
 
 ## Step 8: History and learning
 
