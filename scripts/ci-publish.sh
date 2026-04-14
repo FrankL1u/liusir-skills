@@ -137,7 +137,7 @@ except:
   # Copy files, respecting .clawhubignore
   IGNORE_FILE="$SKILL_DIR/.clawhubignore"
 
-  RSYNC_EXCLUDES="--exclude=node_modules --exclude=.git --exclude=__pycache__"
+  RSYNC_EXCLUDES="--exclude=node_modules --exclude=.git --exclude=__pycache__ --exclude=.DS_Store"
   if [ -f "$IGNORE_FILE" ]; then
     while IFS= read -r pattern || [ -n "$pattern" ]; do
       [[ -z "$pattern" || "$pattern" =~ ^# ]] && continue

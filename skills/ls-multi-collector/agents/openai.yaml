@@ -1,0 +1,4 @@
+interface:
+  display_name: "LS Multi Collector"
+  short_description: "Download videos, create transcripts, and fetch articles into local bundles"
+  default_prompt: "Use $ls-multi-collector to route the user request to download-video, transcript-video, or fetch-article. Always write a local output bundle. Douyin and YouTube video links are supported. For transcript-video, prefer official subtitles, then use configured remote ASR directly against the remote media URL. If no ASR is configured and no official subtitles exist, tell the user to configure it. If no LLM is configured, keep rule-based cleanup and skip translation."

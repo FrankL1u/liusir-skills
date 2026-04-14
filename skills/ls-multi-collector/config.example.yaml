@@ -1,0 +1,12 @@
+asr:
+  provider: ""
+  base_url: ""
+  api_key: ""
+  model: ""
+
+llm:
+  enabled: false
+  provider: openai_compatible
+  base_url: https://api.openai.com/v1
+  api_key: ""
+  model: ""

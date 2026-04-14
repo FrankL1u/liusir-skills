@@ -13,3 +13,6 @@ tmp/
 .clawhub-tmp/
 .ls-wechat-article/
 .ls-xhs-note/
+skills/ls-multi-collector/.ls-multi-collector/
+skills/ls-multi-collector/output/
+skills/ls-multi-collector/toolkit/package-lock.json

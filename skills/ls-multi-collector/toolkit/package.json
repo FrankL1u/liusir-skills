@@ -1,0 +1,29 @@
+{
+  "name": "ls-multi-collector-toolkit",
+  "version": "1.0.0",
+  "description": "Toolkit for LS Multi Collector skill",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "ls-multi-collector": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "doctor": "tsx src/cli.ts doctor",
+    "download-video": "tsx src/cli.ts download-video",
+    "transcript-video": "tsx src/cli.ts transcript-video",
+    "fetch-article": "tsx src/cli.ts fetch-article",
+    "validate-skill": "python3 ../scripts/validate_skill.py"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "commander": "^12.1.0",
+    "yaml": "^2.5.0",
+    "youtube-transcript": "^1.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.2"
+  }
+}
