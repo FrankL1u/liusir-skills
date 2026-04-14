@@ -1,9 +1,10 @@
 # LIUSIR Skills
 
-AI agent skills for content workflows and publishing automation.
+AI agent skills for source collection, content workflows, and publishing automation.
 
-This repository currently includes two content workflow skills:
+This repository currently includes three workflow skills:
 
+- Local media and article collection workflow
 - WeChat Official Account article workflow
 - Xiaohongshu note workflow
 
@@ -11,6 +12,7 @@ This repository currently includes two content workflow skills:
 
 | Skill | Description |
 |-------|-------------|
+| [ls-multi-collector](./skills/ls-multi-collector) | Collect Douyin, YouTube, WeChat, X, and generic web content into local bundles with video download, transcript, and article-fetch workflows |
 | [ls-wechat-article](./skills/ls-wechat-article) | Write and publish WeChat Official Account articles end-to-end — topic intake, drafting, SEO polish, cover and inline images, theme preview, draft publish, stats backfill, and learning workflows |
 | [ls-xhs-note](./skills/ls-xhs-note) | Create Xiaohongshu note assets end-to-end — topic intake, source article drafting, native note writing, visual planning, and image generation |
 
@@ -19,6 +21,7 @@ This repository currently includes two content workflow skills:
 ### Install a specific skill
 
 ```bash
+npx skills add FrankL1u/liusir-skills --skill ls-multi-collector
 npx skills add FrankL1u/liusir-skills --skill ls-wechat-article
 npx skills add FrankL1u/liusir-skills --skill ls-xhs-note
 ```
@@ -37,18 +40,20 @@ This repository also includes a plugin-style distribution path through `.claude-
 
 Some skills may require additional local setup.
 
-Common prerequisites across the content workflow skills:
+Common prerequisites across the workflow skills:
 
 - Node.js >= 18
 - Python >= 3.9
+- `ls-multi-collector` also requires `uv`, `ffmpeg`, `yt-dlp`, `defuddle`, `xreach`, and `camoufox`
 - Optional image provider keys for AI image generation
 
 Skill-specific notes:
 
+- `ls-multi-collector`: collects source material into local bundles; remote ASR and LLM are optional for transcript enhancement
 - `ls-wechat-article`: requires WeChat Official Account API credentials for publishing, and can optionally use TrendRadar MCP for topic signals
 - `ls-xhs-note`: does not publish directly; it can optionally use TrendRadar MCP for topic signals and image providers for Step 5 generation
 
-See the setup guides in [skills/ls-wechat-article/README.md](./skills/ls-wechat-article/README.md) and [skills/ls-xhs-note/README.md](./skills/ls-xhs-note/README.md).
+See the setup guides in [skills/ls-multi-collector/README.md](./skills/ls-multi-collector/README.md), [skills/ls-wechat-article/README.md](./skills/ls-wechat-article/README.md), and [skills/ls-xhs-note/README.md](./skills/ls-xhs-note/README.md).
 
 ## Works With
 
