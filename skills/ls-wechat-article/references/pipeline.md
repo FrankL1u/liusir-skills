@@ -83,19 +83,27 @@ Use `references/frameworks.md` and `references/article-archetypes.md`.
 
 Read `references/writing-guide.md` and `{runtime_root}/clients/{client}/playbook.md` if it exists.
 
+- Before drafting a new article, gather a small but fresh evidence pool: recent news, releases, product changes, market moves, or representative examples related to the article subject
+- If the article claims to cover “latest”, “recent”, “trends”, “行业动态”, or current-state judgment, do not proceed without fresh source inputs
 - Draft the article to match the selected framework, `article_archetype`, and `output_shape`
+- Ground current-state claims, examples, and judgments in the fresh materials gathered before drafting
+- If Step 2 was skipped because the user gave a concrete topic, do this freshness research here before writing
 - Respect blacklist and tone settings
 - Keep the article useful even without images or special formatting
 - `immersive_longform`
   - default to `2800-5000` Chinese characters
   - allow `0-2` H2
-  - emphasize scene opening, main-thread callbacks, circular close, and culture/history lift
+  - emphasize a strong opening, main-thread callbacks, circular close, and culture/history lift
 - `structured_longform`
   - default to `2200-3800` Chinese characters
   - keep `2-5` H2
   - every section must land one concrete action or judgment
   - `methodology` drafts must explain learning curve and failure points
 - Save to `{runtime_root}/output/{client}/{YYYY-MM-DD}-{title-slug}/article.md`
+
+Fallback:
+
+- If fresh-info search fails, tell the user the freshness limitation and either ask for source links or continue only if the user accepts a non-live draft
 
 ## Step 5A: Auto-fix
 

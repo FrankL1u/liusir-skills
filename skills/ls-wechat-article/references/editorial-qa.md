@@ -74,7 +74,7 @@ Check:
 
 Judgment:
 
-- `immersive_longform` should usually keep `0-2` H2 and rely on scene, turns, and callbacks
+- `immersive_longform` should usually keep `0-2` H2 and rely on a strong opening, turns, and callbacks
 - `structured_longform` should keep `2-5` H2 and give each section a concrete move or conclusion
 
 ## L3 内容质量

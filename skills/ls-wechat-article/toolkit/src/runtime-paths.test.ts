@@ -88,3 +88,26 @@ test('inferClientFromRuntimeArticlePath recognizes articles stored under runtime
 
   rmSync(workspace, { recursive: true, force: true });
 });
+
+test('inferClientFromRuntimeArticlePath tolerates /var and /private/var aliases when cwd is inside tmpdir', () => {
+  const workspace = mkdtempSync(join(tmpdir(), 'ls-wechat-runtime-'));
+  const originalCwd = process.cwd();
+  const articlePath = join(
+    workspace,
+    '.ls-wechat-article',
+    'output',
+    'demo',
+    '2026-04-09-test',
+    'article.md',
+  );
+  mkdirSync(dirname(articlePath), { recursive: true });
+
+  try {
+    process.chdir(workspace);
+    const client = inferClientFromRuntimeArticlePath(articlePath);
+    assert.equal(client, 'demo');
+  } finally {
+    process.chdir(originalCwd);
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});

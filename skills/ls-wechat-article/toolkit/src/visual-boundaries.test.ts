@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -38,7 +38,9 @@ test('buildInlineImagePrompt requires an explicit inline type', () => {
 
 test('illustrateMarkdown requires explicit inline targets from the agent', async () => {
   const tempDir = mkdtempSync(join(tmpdir(), 'ls-wechat-boundary-'));
+  const originalCwd = process.cwd();
   const articlePath = join(tempDir, 'article.md');
+  mkdirSync(join(tempDir, '.ls-wechat-article'), { recursive: true });
   writeFileSync(
     articlePath,
     [
@@ -54,15 +56,20 @@ test('illustrateMarkdown requires explicit inline targets from the agent', async
     'utf-8',
   );
 
-  await assert.rejects(
-    () => illustrateMarkdown({
-      input: articlePath,
-      client: 'default',
-      style: 'editorial',
-      color: '#3498db',
-    } as never),
-    /target/i,
-  );
+  try {
+    process.chdir(tempDir);
+    await assert.rejects(
+      () => illustrateMarkdown({
+        input: articlePath,
+        client: 'default',
+        style: 'editorial',
+        color: '#3498db',
+      } as never),
+      /target/i,
+    );
+  } finally {
+    process.chdir(originalCwd);
+  }
 
   rmSync(tempDir, { recursive: true, force: true });
 });

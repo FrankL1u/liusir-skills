@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 
-import { resolveWritableRuntimeRoot } from './runtime-paths.js';
+import { inferClientFromRuntimeArticlePath, resolveWritableRuntimeRoot } from './runtime-paths.js';
 
 function slugifyTitle(title: string): string {
   const normalized = title
@@ -33,15 +33,21 @@ export interface ArticleBundlePaths {
   promptsDir: string;
 }
 
-export function createArticleBundlePaths(client: string, title: string): ArticleBundlePaths {
-  const slug = slugifyTitle(title);
-  const runtimeRoot = resolveWritableRuntimeRoot();
-  const bundleDir = resolve(runtimeRoot, 'output', client, `${currentDateString()}-${slug}`);
+function ensureBundleDirs(bundleDir: string): Pick<ArticleBundlePaths, 'assetsDir' | 'promptsDir'> {
   const assetsDir = join(bundleDir, 'assets');
   const promptsDir = join(bundleDir, 'prompts');
 
   mkdirSync(assetsDir, { recursive: true });
   mkdirSync(promptsDir, { recursive: true });
+
+  return { assetsDir, promptsDir };
+}
+
+export function createArticleBundlePaths(client: string, title: string): ArticleBundlePaths {
+  const slug = slugifyTitle(title);
+  const runtimeRoot = resolveWritableRuntimeRoot();
+  const bundleDir = resolve(runtimeRoot, 'output', client, `${currentDateString()}-${slug}`);
+  const { assetsDir, promptsDir } = ensureBundleDirs(bundleDir);
 
   return {
     bundleDir,
@@ -52,4 +58,30 @@ export function createArticleBundlePaths(client: string, title: string): Article
     assetsDir,
     promptsDir,
   };
+}
+
+export function resolveArticleBundlePathsForInput(input: {
+  inputPath: string;
+  title: string;
+  client?: string;
+}): ArticleBundlePaths {
+  const absoluteInput = resolve(input.inputPath);
+  const inferredClient = inferClientFromRuntimeArticlePath(absoluteInput);
+
+  if (inferredClient && basename(absoluteInput) === 'article.md') {
+    const bundleDir = dirname(absoluteInput);
+    const { assetsDir, promptsDir } = ensureBundleDirs(bundleDir);
+
+    return {
+      bundleDir,
+      articlePath: absoluteInput,
+      previewPath: join(bundleDir, 'preview.html'),
+      coverPath: join(bundleDir, 'cover.png'),
+      qualityReportPath: join(bundleDir, 'quality-report.md'),
+      assetsDir,
+      promptsDir,
+    };
+  }
+
+  return createArticleBundlePaths(input.client ?? inferredClient ?? 'default', input.title);
 }

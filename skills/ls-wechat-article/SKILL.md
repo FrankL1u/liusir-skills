@@ -176,20 +176,21 @@ Treat `--step N` as an explicit routing and pause directive.
 ## Critical Quality Rules
 
 1. Read `references/writing-guide.md` before drafting.
-2. In Step 3.5, choose both `framework` and `article_archetype`, then bind `output_shape`.
-3. Keep the H1 title concise and WeChat-friendly.
-4. The digest must not repeat the title.
-5. Respect the blacklist and tone fields in `{runtime_root}/clients/{client}/style.yaml`.
-6. Route from Step 1 based on the actual input type instead of forcing the full pipeline every time.
-7. Respect explicit `--step` routing and stop at that step.
-8. Step 5 is two-stage: `5A auto-fix` then `5B editorial QA`.
-9. Step 5B must write `quality-report.md` beside the article bundle.
-10. Before generating visuals, ask about image scope, style, and inline image density unless the user already specified them.
-11. In Step 6, the agent must choose the explicit cover type and explicit inline targets before calling toolkit commands. Do not let the toolkit infer them from article content.
-12. Before preview or publish, ask for a theme or explicitly state the chosen theme.
-13. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
-14. If publishing fails, fall back to local preview instead of stopping the workflow.
-15. Use configured image providers only: Gemini, OpenAI, Doubao, or Qwen.
+2. Before Step 4 drafting, gather fresh related information for the article subject. Do not draft “latest / trend / current state” articles from memory only.
+3. In Step 3.5, choose both `framework` and `article_archetype`, then bind `output_shape`.
+4. Keep the H1 title concise and WeChat-friendly.
+5. The digest must not repeat the title.
+6. Respect the blacklist and tone fields in `{runtime_root}/clients/{client}/style.yaml`.
+7. Route from Step 1 based on the actual input type instead of forcing the full pipeline every time.
+8. Respect explicit `--step` routing and stop at that step.
+9. Step 5 is two-stage: `5A auto-fix` then `5B editorial QA`.
+10. Step 5B must write `quality-report.md` beside the article bundle.
+11. Before generating visuals, ask about image scope, style, and inline image density unless the user already specified them.
+12. In Step 6, the agent must choose the explicit cover type and explicit inline targets before calling toolkit commands. Do not let the toolkit infer them from article content.
+13. Before preview or publish, ask for a theme or explicitly state the chosen theme.
+14. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
+15. If publishing fails, fall back to local preview instead of stopping the workflow.
+16. Use configured image providers only: Gemini, OpenAI, Doubao, or Qwen.
 
 ## Pipeline Overview
 
@@ -217,6 +218,7 @@ Follow these rules:
 - If publishing fails, fall back to local preview
 - If image generation fails, continue with a text-only or prompt-only version
 - If hotspot fetching fails, ask the user for a direct topic and continue
+- If fresh-info search fails during drafting, tell the user what is missing and either continue with explicit freshness limits or ask for source links
 - Stop only when required input is missing or both the primary path and fallback fail
 
 The goal is to deliver the best usable outcome, not to terminate the whole workflow on a local failure.
