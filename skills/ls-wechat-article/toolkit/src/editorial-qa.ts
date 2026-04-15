@@ -335,6 +335,13 @@ function detectSignals(markdownText: string, outputShape: OutputShape): QaSignal
   const paragraphLengths = paragraphs.map(paragraph => paragraph.length);
   const maxParagraphLength = paragraphLengths.length ? Math.max(...paragraphLengths) : 0;
   const sceneOpening = /(最近|今天|昨天|上周|上个月|这两天|凌晨|周末|刷到|看到|我买了|我试了)/.test(firstParagraph);
+  const confessionOpening = /(写这篇文章之前|我删掉了|我承认|我以前一直|我后来才意识到|不是因为.+是因为)/.test(firstParagraph);
+  const dataOpening = /(\d{2,}|%|万|亿|次)/.test(firstParagraph)
+    && /(相当于|也就是说|这意味着|但)/.test(firstParagraph);
+  const challengeOpening = /^(你以为|如果你还觉得|我要先说一句不好听的)/.test(firstParagraph);
+  const contradictionOpening = /(一边.+一边|原本以为.+实际上|两个事实|两个同时成立的事实)/.test(firstParagraph);
+  const openingPass = !/^(在当今|随着|什么是)/.test(firstParagraph)
+    && (sceneOpening || confessionOpening || dataOpening || challengeOpening || contradictionOpening);
   const questionTurns = /(为什么|怎么会|但真正让我好奇|听着很难理解对吧|你可能会问)/.test(content);
   const transitionMarkers = /(回到|顺着上面的|说到这个|但真正|不过|问题是|我真正好奇的不是)/.test(content);
   const privateVoice = /(我觉得|我真正好奇|我还是|说实话|我自己|我更愿意)/.test(content);
@@ -349,14 +356,14 @@ function detectSignals(markdownText: string, outputShape: OutputShape): QaSignal
     ? h2Count <= 2
     : h2Count >= 2 && h2Count <= 5;
   const archetypePass = outputShape === 'immersive_longform'
-    ? /(最近|今天|这两天|我刷到|我看到|我买了|我试了)/.test(firstParagraph)
+    ? openingPass
       && /(回到|问题是|我真正好奇的不是|顺着这个问题)/.test(content)
     : /(建议|步骤|清单|今天就可以|先把|下一步)/.test(content)
       && /(学习曲线|失败点|一开始|踩坑|没跑通)/.test(content);
   const distinctLengths = new Set(paragraphLengths.map(length => Math.round(length / 40))).size;
 
   return {
-    openingPass: sceneOpening && !/^(在当今|随着)/.test(firstParagraph),
+    openingPass,
     rhythmPass: distinctLengths >= 2 || paragraphs.some(paragraph => paragraph.length <= 24),
     transitionPass: questionTurns || transitionMarkers,
     voicePass: privateVoice,
@@ -403,7 +410,7 @@ function buildQualityReport(input: {
   const l4Pass = signals.warmthPass && signals.posturePass && signals.flowPass;
   const overall = [l1Pass, l2Pass, l3Pass, l4Pass].every(Boolean);
   const priorities = [
-    !signals.openingPass ? '补强开头场景感，避免抽象起手。' : null,
+    !signals.openingPass ? '补强开头抓力，避免抽象起手。' : null,
     !signals.shapePass ? '当前结构与输出 shape 不一致，需调整 H2 数量和段落组织。' : null,
     !signals.archetypePass ? '当前原型要素不完整，补齐主线回扣、行动建议或学习曲线。' : null,
     !signals.supportPass ? '为核心判断补一个具体数据、案例或已发生的场景。' : null,

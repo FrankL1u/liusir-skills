@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 
-import { createArticleBundlePaths } from './article-bundle.js';
+import { resolveArticleBundlePathsForInput } from './article-bundle.js';
 import { resolveArticleMetadata, stripPrimaryTitle } from './article-metadata.js';
 import { generateImageToFile } from './image-gen.js';
 import { buildCoverImagePrompt, loadClientImageSystem } from './image-style-system.js';
@@ -42,7 +42,11 @@ export async function generateArticleCover(opts: GenerateCoverOptions): Promise<
   const title = metadata.title || fallbackTitle(inputPath);
   const articleContent = stripPrimaryTitle(rawText);
 
-  const bundle = createArticleBundlePaths(opts.client ?? 'default', title);
+  const bundle = resolveArticleBundlePathsForInput({
+    inputPath,
+    title,
+    client: opts.client,
+  });
   const outputPath = resolve(opts.output ?? bundle.coverPath);
   const usingBundleDefault = !opts.output;
   const promptsDir = usingBundleDefault

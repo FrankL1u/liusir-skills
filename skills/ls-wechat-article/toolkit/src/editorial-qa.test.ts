@@ -146,3 +146,40 @@ test('runEditorialQa should not treat the H1 title as the opening paragraph in q
     rmSync(workspace, { recursive: true, force: true });
   }
 });
+
+test('runEditorialQa accepts confession-style openings without forcing scene tropes', async () => {
+  const workspace = mkdtempSync(join(tmpdir(), 'ls-wechat-editorial-confession-'));
+  const originalCwd = process.cwd();
+  process.chdir(workspace);
+
+  try {
+    const runtimeRoot = join(workspace, '.ls-wechat-article');
+    mkdirSync(runtimeRoot, { recursive: true });
+    const inputPath = join(workspace, 'confession.md');
+    writeFileSync(
+      inputPath,
+      [
+        '# 我为什么不再迷信 AI 编程跑分',
+        '',
+        '写这篇文章之前，我删掉了三个版本。不是因为不满意，是因为每写到一半，我就发现自己在回避真正的问题。',
+        '我真正好奇的不是模型又涨了多少分，而是为什么团队还是会被同一类验证问题拖慢。',
+        '去年我们把同一条交付链路跑了 27 次，最后卡住的地方一次都不在模型本身。',
+        '我也经历过这种时候。',
+        '历史上的工具升级，往往都不是先赢在核心能力，而是赢在组织能力。',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+
+    const result = await runEditorialQa({
+      input: inputPath,
+      client: 'demo',
+    });
+
+    const report = readFileSync(result.reportPath, 'utf-8');
+    assert.match(report, /- 开头：✅/);
+  } finally {
+    process.chdir(originalCwd);
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});

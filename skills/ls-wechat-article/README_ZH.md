@@ -86,6 +86,7 @@ trendradar:
 - 启用后，Step 2 会通过 `scripts/fetch_trendradar_hotspots.py` 合并最近 1 天的新闻和最近 1 天的 RSS 订阅内容。
 - 脚本输出仍然是给下游选题阶段使用的统一 JSON，而不是关键词列表。
 - 如果 TrendRadar 不可用，流程会回退到 `scripts/fetch_hotspots.py`。
+- 在正式起草新文章前，流程会先搜索一轮最新相关资讯。这个要求只作用于写作流程，不作用于纯排版或纯发布流程。
 
 ## 使用教程
 
@@ -97,7 +98,7 @@ trendradar:
 | Step 2 | 如果没有明确 topic，就先获取热点信号 |
 | Step 3 | 选择文章选题 |
 | Step 3.5 | 选择框架、文章原型和输出 shape |
-| Step 4 | 按原型约束生成文章草稿 |
+| Step 4 | 先搜索最新相关资讯，再按原型约束生成文章草稿 |
 | Step 5 | 执行 `5A auto-fix` 和 `5B editorial QA` |
 | Step 6 | 决定图片范围、图片风格和正文图数量 |
 | Step 7 | 决定主题，生成 HTML，预览或发布到草稿箱 |
@@ -173,8 +174,8 @@ trendradar:
 
 ## 常用命令
 
-完整 CLI 语法见 [cli-reference.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/cli-reference.md)。  
-主题选择建议见 [theme-selection.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/theme-selection.md)。
+完整 CLI 语法见 [cli-reference.md](./references/cli-reference.md)。  
+主题选择建议见 [theme-selection.md](./references/theme-selection.md)。
 
 ```bash
 # 预览
@@ -209,7 +210,7 @@ node dist/build-playbook.js --client demo
 `editorial-qa` 会把 `quality-report.md` 写进文章 bundle，让 Step 5 的判断有明确产物，而不是只留在 agent 口头说明里。  
 `illustrate` 默认会把本次文章产物写入 `{runtime_root}/output/{client}/{date}-{title-slug}/`，其中包含 `article.md`、`assets/` 和 `prompts/`。toolkit 不再自己决定该配哪些小节、该用什么图片类型；这些都要由 agent 先选好，再显式传入 `--target`。
 
-公共图片风格库位于 [references/image-system.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml)。运行态 client 数据位于 `{runtime_root}/clients/{client}/style.yaml`，只配置默认主题、写作画像和 client 覆盖项。
+公共图片风格库位于 [references/image-system.yaml](./references/image-system.yaml)。运行态 client 数据位于 `{runtime_root}/clients/{client}/style.yaml`，只配置默认主题、写作画像和 client 覆盖项。
 
 ## 让文章越写越像这个号
 
@@ -236,16 +237,16 @@ node dist/build-playbook.js --client demo
 └── themes/
 ```
 
-这些目录和文件由 [style-template.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/style-template.md) 说明。发布记录会写入 `{runtime_root}/clients/{client}/history.yaml`，改稿学习会写入 `{runtime_root}/clients/{client}/lessons/`，`corpus/` 作为参考语料目录供后续刷新 `playbook.md` 使用。
+这些目录和文件由 [style-template.md](./references/style-template.md) 说明。发布记录会写入 `{runtime_root}/clients/{client}/history.yaml`，改稿学习会写入 `{runtime_root}/clients/{client}/lessons/`，`corpus/` 作为参考语料目录供后续刷新 `playbook.md` 使用。
 
 ## 相关文件
 
-- [agents/openai.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/agents/openai.yaml)
-- [scripts/validate_skill.py](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/scripts/validate_skill.py)
-- [toolkit/src/image-gen.ts](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/image-gen.ts)
-- [toolkit/src/fetch-stats.ts](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/fetch-stats.ts)
-- [toolkit/src/build-playbook.ts](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/build-playbook.ts)
-- [toolkit/src/learn-edits.ts](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/learn-edits.ts)
+- [agents/openai.yaml](./agents/openai.yaml)
+- [scripts/validate_skill.py](./scripts/validate_skill.py)
+- [toolkit/src/image-gen.ts](./toolkit/src/image-gen.ts)
+- [toolkit/src/fetch-stats.ts](./toolkit/src/fetch-stats.ts)
+- [toolkit/src/build-playbook.ts](./toolkit/src/build-playbook.ts)
+- [toolkit/src/learn-edits.ts](./toolkit/src/learn-edits.ts)
 
 ## 许可证
 

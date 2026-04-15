@@ -14,7 +14,7 @@ Do not apply one uniform structure to every article.
   - default archetypes: `investigation`, `product_experience`, `phenomenon_analysis`
   - default length: `2800-5000` Chinese characters
   - default structure: `H1` plus `0-2` H2
-  - priority: scene opening, main-thread callback, emotional movement, lift
+  - priority: strong opening, main-thread callback, emotional movement, lift
 - `structured_longform`
   - default archetypes: `tool_share`, `methodology`
   - default length: `2200-3800` Chinese characters
@@ -468,6 +468,10 @@ Why it works: Challenge + evidence promise. Reader MUST continue to see if you c
 
 **8. The Micro-Story — Unfinished Thread**
 A tiny narrative with an unresolved question. Short. Sharp. Incomplete.
+
+Do not collapse all tech articles into the same fake-cinematic opening.
+The pattern `深夜/凌晨 + 屏幕/终端 + 第 X 版方案 + 发呆` is an overused trope, not a default house style.
+Rotate opening types across articles instead of reusing the same scene shell.
 > "上个月，我认识了十年的合伙人给我发了条微信：'我想好了。'三个字。那天下午我们的对话只有七句。但它改变了接下来所有事。"
 
 Why it works: Human compulsion to hear the end of a story. The gap between "seven sentences" and "changed everything" is irresistible.

@@ -86,6 +86,7 @@ Notes:
 - When enabled, Step 2 uses `scripts/fetch_trendradar_hotspots.py` to merge TrendRadar news from the last 1 day with RSS items from the last 1 day.
 - The script emits one normalized JSON payload for downstream topic selection.
 - If TrendRadar is unavailable, the skill falls back to `scripts/fetch_hotspots.py`.
+- Before drafting a new article, the workflow should first search for the latest related information. This applies to writing flows, not to format-only or publish-only flows.
 
 ## Workflow Tutorial
 
@@ -97,7 +98,7 @@ Notes:
 | Step 2 | If no concrete topic is given, fetch topical signals |
 | Step 3 | Pick the article angle |
 | Step 3.5 | Pick the framework, article archetype, and output shape |
-| Step 4 | Draft with archetype-bound writing rules |
+| Step 4 | Search the latest related information, then draft with archetype-bound writing rules |
 | Step 5 | Run `5A auto-fix` and `5B editorial QA` |
 | Step 6 | Decide image scope, image style, inline image density, then convert that into explicit cover and inline targets |
 | Step 7 | Decide theme, generate HTML, preview or publish to drafts |
@@ -173,8 +174,8 @@ If the user does not specify a theme, the workflow should either ask for one or 
 
 ## Common Commands
 
-Full CLI syntax: [cli-reference.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/cli-reference.md)  
-Theme guidance: [theme-selection.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/theme-selection.md)
+Full CLI syntax: [cli-reference.md](./references/cli-reference.md)  
+Theme guidance: [theme-selection.md](./references/theme-selection.md)
 
 ```bash
 # Preview
@@ -209,7 +210,7 @@ If `--cover` is omitted during publish, the tool will try to use the first image
 `editorial-qa` writes `quality-report.md` into the article bundle and keeps Step 5 output explicit instead of hiding quality judgment inside the agent response.
 `illustrate` writes article output to `{runtime_root}/output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`. The toolkit no longer chooses sections or image types on its own; pass explicit `--target` entries from the agent.
 
-The shared image style library lives in [references/image-system.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml). Runtime client data lives under `{runtime_root}/clients/{client}/style.yaml` and only stores default theme, writing profile, and client-specific overrides.
+The shared image style library lives in [references/image-system.yaml](./references/image-system.yaml). Runtime client data lives under `{runtime_root}/clients/{client}/style.yaml` and only stores default theme, writing profile, and client-specific overrides.
 
 ## Continuous Learning
 
@@ -236,16 +237,16 @@ This loop has three parts:
 └── themes/
 ```
 
-See [style-template.md](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/style-template.md) for the client template. Publish records go to `{runtime_root}/clients/{client}/history.yaml`, edit learning goes to `{runtime_root}/clients/{client}/lessons/`, and `corpus/` acts as the reference article directory for future playbook refresh.
+See [style-template.md](./references/style-template.md) for the client template. Publish records go to `{runtime_root}/clients/{client}/history.yaml`, edit learning goes to `{runtime_root}/clients/{client}/lessons/`, and `corpus/` acts as the reference article directory for future playbook refresh.
 
 ## Related Files
 
-- [agents/openai.yaml](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/agents/openai.yaml)
-- [scripts/validate_skill.py](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/scripts/validate_skill.py)
-- [toolkit/src/image-gen.ts](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/image-gen.ts)
-- [toolkit/src/fetch-stats.ts](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/fetch-stats.ts)
-- [toolkit/src/build-playbook.ts](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/build-playbook.ts)
-- [toolkit/src/learn-edits.ts](/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/learn-edits.ts)
+- [agents/openai.yaml](./agents/openai.yaml)
+- [scripts/validate_skill.py](./scripts/validate_skill.py)
+- [toolkit/src/image-gen.ts](./toolkit/src/image-gen.ts)
+- [toolkit/src/fetch-stats.ts](./toolkit/src/fetch-stats.ts)
+- [toolkit/src/build-playbook.ts](./toolkit/src/build-playbook.ts)
+- [toolkit/src/learn-edits.ts](./toolkit/src/learn-edits.ts)
 
 ## License
 

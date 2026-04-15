@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, realpathSync } from 'node:fs';
 import os from 'node:os';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { basename, dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,8 +36,33 @@ function ensureParentDir(path: string) {
   mkdirSync(dirname(path), { recursive: true });
 }
 
+function normalizePathForComparison(inputPath: string): string {
+  const absolutePath = resolve(inputPath);
+  const trailingSegments: string[] = [];
+  let existingPath = absolutePath;
+
+  while (!pathExists(existingPath)) {
+    const parentPath = dirname(existingPath);
+    if (parentPath === existingPath) {
+      return absolutePath;
+    }
+
+    trailingSegments.unshift(basename(existingPath));
+    existingPath = parentPath;
+  }
+
+  try {
+    const realExistingPath = realpathSync.native(existingPath);
+    return resolve(realExistingPath, ...trailingSegments);
+  } catch {
+    return resolve(existingPath, ...trailingSegments);
+  }
+}
+
 function isWithin(basePath: string, targetPath: string): boolean {
-  const rel = relative(basePath, targetPath);
+  const normalizedBasePath = normalizePathForComparison(basePath);
+  const normalizedTargetPath = normalizePathForComparison(targetPath);
+  const rel = relative(normalizedBasePath, normalizedTargetPath);
   return rel === '' || (!rel.startsWith('..') && !rel.startsWith(`..${sep}`) && rel !== '..');
 }
 
@@ -114,14 +139,14 @@ export function findRuntimeConfigPath(options: RuntimePathOptions = {}): string 
 }
 
 export function inferClientFromRuntimeArticlePath(inputPath: string, options: RuntimePathOptions = {}): string | null {
-  const absolutePath = resolve(inputPath);
+  const absolutePath = normalizePathForComparison(inputPath);
   const roots = getRuntimeRoots(options);
 
   for (const root of [roots.projectRoot, roots.userRoot, roots.legacyRoot]) {
     const outputRoot = resolve(root, 'output');
     if (!isWithin(outputRoot, absolutePath)) continue;
 
-    const rel = relative(outputRoot, absolutePath);
+    const rel = relative(normalizePathForComparison(outputRoot), absolutePath);
     const segments = rel.split(/[\\/]/).filter(Boolean);
     if (segments.length >= 2) {
       return segments[0] ?? null;
@@ -132,12 +157,12 @@ export function inferClientFromRuntimeArticlePath(inputPath: string, options: Ru
 }
 
 export function relativizeFromRuntimeRoot(filePath: string, options: RuntimePathOptions = {}): string {
-  const absolutePath = resolve(filePath);
+  const absolutePath = normalizePathForComparison(filePath);
   const roots = getRuntimeRoots(options);
 
   for (const root of [roots.projectRoot, roots.userRoot, roots.legacyRoot]) {
     if (!isWithin(root, absolutePath)) continue;
-    return relative(root, absolutePath).replace(/\\/g, '/');
+    return relative(normalizePathForComparison(root), absolutePath).replace(/\\/g, '/');
   }
 
   return absolutePath;

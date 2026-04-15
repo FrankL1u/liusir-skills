@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, relative, resolve } from 'node:path';
 
-import { createArticleBundlePaths } from './article-bundle.js';
+import { resolveArticleBundlePathsForInput } from './article-bundle.js';
 import { resolveArticleMetadata } from './article-metadata.js';
 import { generateImageToFile } from './image-gen.js';
 import { buildInlineImagePrompt, loadClientImageSystem, type InlineImageType } from './image-style-system.js';
@@ -230,7 +230,11 @@ export async function illustrateMarkdown(opts: IllustrateOptions): Promise<Illus
   const rawText = readFileSync(inputPath, 'utf-8');
   const lines = rawText.split(/\r?\n/);
   const title = extractTitle(rawText, inputPath);
-  const bundle = createArticleBundlePaths(opts.client ?? 'default', title);
+  const bundle = resolveArticleBundlePathsForInput({
+    inputPath,
+    title,
+    client: opts.client,
+  });
   const outputPath = resolve(opts.output ?? bundle.articlePath);
   const usingBundleDefault = !opts.output;
   const imageDir = opts.output
