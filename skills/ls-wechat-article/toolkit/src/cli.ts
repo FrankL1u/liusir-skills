@@ -102,22 +102,22 @@ async function resolveCoverPath(explicitCover: string | undefined, images: strin
 
 function parseIllustrationTargets(specs: string[] | undefined): IllustrateTargetInput[] {
   if (!specs?.length) {
-    throw new Error('At least one --target "<section heading>::<inlineType>" value is required.');
+    throw new Error('At least one --target "<position anchor>::<inlineType>" value is required.');
   }
 
   return specs.map(spec => {
     const separatorIndex = spec.lastIndexOf('::');
     if (separatorIndex <= 0 || separatorIndex === spec.length - 2) {
-      throw new Error(`Invalid --target value: ${spec}. Expected "<section heading>::<inlineType>".`);
+      throw new Error(`Invalid --target value: ${spec}. Expected "<position anchor>::<inlineType>".`);
     }
 
-    const heading = spec.slice(0, separatorIndex).trim();
+    const anchor = spec.slice(0, separatorIndex).trim();
     const inlineType = spec.slice(separatorIndex + 2).trim();
-    if (!heading || !inlineType) {
-      throw new Error(`Invalid --target value: ${spec}. Expected "<section heading>::<inlineType>".`);
+    if (!anchor || !inlineType) {
+      throw new Error(`Invalid --target value: ${spec}. Expected "<position anchor>::<inlineType>".`);
     }
 
-    return { heading, inlineType };
+    return { anchor, heading: anchor, inlineType };
   });
 }
 
@@ -338,7 +338,7 @@ program
   .option('--client <name>', 'Client/output namespace', 'default')
   .option('--provider <name>', 'Image provider: gemini, openai, doubao, qwen')
   .option('--style <text>', 'Image style direction', 'follow article tone')
-  .requiredOption('--target <spec...>', 'Explicit inline targets in the form "<section heading>::<inlineType>"')
+  .requiredOption('--target <spec...>', 'Explicit inline targets in the form "<position anchor>::<inlineType>"')
   .option('--color <hex>', 'Accent color used in prompts', DEFAULT_COLOR)
   .action(async (input: string, opts) => {
     const result = await illustrateMarkdown({

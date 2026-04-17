@@ -191,7 +191,7 @@ node dist/cli.js editorial-qa article.md --client demo
 node dist/cli.js theme-preview article.md
 
 # Inline illustrations
-node dist/cli.js illustrate article.md --client demo --style editorial --target "执行闭环::flowchart" --target "验证层::framework" --provider qwen
+node dist/cli.js illustrate article.md --client demo --style editorial --target "先定义输入，再定义输出，最后定义回看路径::flowchart" --target "不要把验证留到最后，应该让验证跟执行一起发生::framework" --provider qwen
 
 # Cover generation
 node dist/cli.js cover article.md --client demo --style blueprint --type conceptual --provider openai
@@ -208,7 +208,7 @@ node dist/build-playbook.js --client demo
 
 If `--cover` is omitted during publish, the tool will try to use the first image in the article as the draft cover.
 `editorial-qa` writes `quality-report.md` into the article bundle and keeps Step 5 output explicit instead of hiding quality judgment inside the agent response.
-`illustrate` writes article output to `{runtime_root}/output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`. The toolkit no longer chooses sections or image types on its own; pass explicit `--target` entries from the agent.
+`illustrate` writes article output to `{runtime_root}/output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`. The toolkit no longer chooses positions or image types on its own; pass explicit `--target` entries from the agent. Prefer paragraph/content-block anchors; heading targets remain supported as a fallback for backward compatibility.
 
 The shared image style library lives in [references/image-system.yaml](./references/image-system.yaml). Runtime client data lives under `{runtime_root}/clients/{client}/style.yaml` and only stores default theme, writing profile, and client-specific overrides.
 

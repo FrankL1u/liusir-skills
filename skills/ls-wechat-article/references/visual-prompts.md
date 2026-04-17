@@ -56,10 +56,11 @@ Defaulting rules:
 After intake, convert the decision into explicit execution inputs before calling the toolkit:
 
 - choose one `cover type`
-- choose the exact section headings that deserve inline images
-- choose one `inline type` for each chosen section
+- choose the exact inline positions that deserve inline images
+- prefer paragraph/content-block anchors; use section headings only as fallback
+- choose one `inline type` for each chosen position
 
-The toolkit may read the selected section content to build prompts, but it must not decide which sections to illustrate or which image types to use.
+The toolkit may read the selected target content to build prompts, but it must not decide which positions to illustrate or which image types to use.
 
 ### 3 Creative Directions
 
