@@ -7,7 +7,8 @@ import { generateImageToFile } from './image-gen.js';
 import { buildInlineImagePrompt, loadClientImageSystem, type InlineImageType } from './image-style-system.js';
 
 export interface IllustrateTargetInput {
-  heading: string;
+  anchor?: string;
+  heading?: string;
   inlineType: string;
   alt?: string;
 }
@@ -29,8 +30,24 @@ interface MarkdownSection {
   startLine: number;
 }
 
+interface MarkdownParagraphBlock {
+  sectionHeading: string;
+  contentLines: string[];
+  startLine: number;
+  endLine: number;
+  anchorText: string;
+}
+
+export interface ResolvedIllustrationTarget {
+  kind: 'section' | 'paragraph';
+  sectionHeading: string;
+  positionLabel: string;
+  contentLines: string[];
+  insertAfterLine: number;
+}
+
 interface IllustrationOutlineEntry {
-  section: MarkdownSection;
+  target: ResolvedIllustrationTarget;
   visualContent: string;
   outputPath: string;
   markdownPath: string;
@@ -71,10 +88,40 @@ function cleanText(text: string): string {
     .trim();
 }
 
-function buildVisualContent(section: MarkdownSection): string {
-  const summary = cleanText(section.contentLines.join(' '));
-  if (!summary) return section.headingText;
-  return `${section.headingText}: ${summary.slice(0, 180)}`;
+function normalizeMatchText(text: string): string {
+  return cleanText(text)
+    .toLowerCase()
+    .replace(/[，。！？：；、“”"'（）()《》【】,.!?;:]/g, '')
+    .replace(/\s+/g, '');
+}
+
+function buildVisualContent(target: ResolvedIllustrationTarget): string {
+  const summary = cleanText(target.contentLines.join(' '));
+  if (!summary) return target.positionLabel;
+  return `${target.sectionHeading}: ${summary.slice(0, 180)}`;
+}
+
+function findLeadingFrontmatterEnd(lines: string[]): number {
+  if (lines[0]?.trim() !== '---') return -1;
+  for (let index = 1; index < lines.length; index += 1) {
+    if (lines[index]?.trim() === '---') return index;
+  }
+  return -1;
+}
+
+function resolveDocumentTitle(lines: string[], articleTitleHint?: string): string {
+  if (articleTitleHint?.trim()) return articleTitleHint.trim();
+
+  const frontmatterEnd = findLeadingFrontmatterEnd(lines);
+  const startIndex = frontmatterEnd >= 0 ? frontmatterEnd + 1 : 0;
+  for (let index = startIndex; index < lines.length; index += 1) {
+    const trimmed = lines[index]?.trim() ?? '';
+    if (/^#\s+/.test(trimmed)) {
+      return trimmed.replace(/^#\s+/, '').trim();
+    }
+  }
+
+  return '导语';
 }
 
 function splitSections(lines: string[]): MarkdownSection[] {
@@ -114,8 +161,154 @@ function splitSections(lines: string[]): MarkdownSection[] {
   return sections;
 }
 
+function splitParagraphBlocks(lines: string[], articleTitleHint?: string): MarkdownParagraphBlock[] {
+  const blocks: MarkdownParagraphBlock[] = [];
+  const documentTitle = resolveDocumentTitle(lines, articleTitleHint);
+  const frontmatterEnd = findLeadingFrontmatterEnd(lines);
+  const startIndex = frontmatterEnd >= 0 ? frontmatterEnd + 1 : 0;
+  let currentSectionHeading = documentTitle;
+  let currentLines: string[] = [];
+  let blockStartLine = -1;
+  let blockEndLine = -1;
+
+  const flush = () => {
+    const text = cleanText(currentLines.join('\n'));
+    if (blockStartLine < 0 || !text) return;
+    blocks.push({
+      sectionHeading: currentSectionHeading,
+      contentLines: [...currentLines],
+      startLine: blockStartLine,
+      endLine: blockEndLine,
+      anchorText: text.slice(0, 80),
+    });
+    currentLines = [];
+    blockStartLine = -1;
+    blockEndLine = -1;
+  };
+
+  for (let index = startIndex; index < lines.length; index += 1) {
+    const line = lines[index] ?? '';
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flush();
+      continue;
+    }
+
+    if (/^!\[[^\]]*]\([^)]+\)\s*$/.test(trimmed) || /^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      flush();
+      continue;
+    }
+
+    if (/^#{1,6}\s+/.test(trimmed)) {
+      flush();
+      const headingText = trimmed.replace(/^#{1,6}\s+/, '').trim();
+      if (/^##{1,2}\s+/.test(trimmed)) {
+        currentSectionHeading = headingText;
+      } else if (/^#\s+/.test(trimmed)) {
+        currentSectionHeading = headingText || documentTitle;
+      }
+      continue;
+    }
+
+    if (blockStartLine < 0) blockStartLine = index;
+    blockEndLine = index;
+    currentLines.push(line);
+  }
+
+  flush();
+
+  return blocks;
+}
+
+function resolveTargetLocator(target: IllustrateTargetInput, index: number): string {
+  const locator = target.anchor?.trim() || target.heading?.trim() || '';
+  if (!locator) {
+    throw new Error(`Inline target ${index + 1} is missing a position anchor.`);
+  }
+  return locator;
+}
+
+function createSectionTarget(section: MarkdownSection): ResolvedIllustrationTarget {
+  return {
+    kind: 'section',
+    sectionHeading: section.headingText,
+    positionLabel: section.headingText,
+    contentLines: section.contentLines,
+    insertAfterLine: section.startLine,
+  };
+}
+
+function createParagraphTarget(block: MarkdownParagraphBlock): ResolvedIllustrationTarget {
+  return {
+    kind: 'paragraph',
+    sectionHeading: block.sectionHeading,
+    positionLabel: `${block.sectionHeading} / ${block.anchorText}`,
+    contentLines: block.contentLines,
+    insertAfterLine: block.endLine,
+  };
+}
+
+function scoreParagraphMatch(locator: string, block: MarkdownParagraphBlock): number {
+  const normalizedLocator = normalizeMatchText(locator);
+  const normalizedAnchor = normalizeMatchText(block.anchorText);
+  const normalizedContent = normalizeMatchText(block.contentLines.join(' '));
+
+  if (!normalizedLocator || !normalizedContent) return 0;
+  if (normalizedAnchor === normalizedLocator || normalizedContent === normalizedLocator) return 500;
+  if (normalizedContent.startsWith(normalizedLocator)) return 420;
+  if (normalizedAnchor.startsWith(normalizedLocator)) return 400;
+  if (normalizedContent.includes(normalizedLocator)) return 320;
+  if (normalizedAnchor.includes(normalizedLocator)) return 280;
+  if (normalizedLocator.includes(normalizedAnchor) && normalizedAnchor.length >= 12) return 220;
+  return 0;
+}
+
+export function resolveIllustrationTargets(
+  lines: string[],
+  explicitTargets: IllustrateTargetInput[] | undefined,
+  articleTitleHint?: string,
+): ResolvedIllustrationTarget[] {
+  if (!explicitTargets?.length) {
+    throw new Error('Explicit inline targets are required. Pass --target "<position anchor>::<inlineType>" and let the agent choose them from the references.');
+  }
+
+  const sections = splitSections(lines);
+  const blocks = splitParagraphBlocks(lines, articleTitleHint);
+  const usedKeys = new Set<string>();
+
+  return explicitTargets.map((target, index) => {
+    const locator = resolveTargetLocator(target, index);
+    const normalizedLocator = normalizeMatchText(locator);
+
+    const sectionIndex = sections.findIndex((section, candidateIndex) => (
+      !usedKeys.has(`section:${candidateIndex}`) && normalizeMatchText(section.headingText) === normalizedLocator
+    ));
+    if (sectionIndex >= 0) {
+      usedKeys.add(`section:${sectionIndex}`);
+      return createSectionTarget(sections[sectionIndex]!);
+    }
+
+    const paragraphMatch = blocks
+      .map((block, blockIndex) => ({
+        block,
+        blockIndex,
+        score: usedKeys.has(`block:${blockIndex}`) ? 0 : scoreParagraphMatch(locator, block),
+      }))
+      .filter(candidate => candidate.score > 0)
+      .sort((left, right) => right.score - left.score || left.block.startLine - right.block.startLine)[0];
+
+    if (!paragraphMatch) {
+      throw new Error(`Inline target position not found: ${locator}`);
+    }
+
+    usedKeys.add(`block:${paragraphMatch.blockIndex}`);
+    return createParagraphTarget(paragraphMatch.block);
+  });
+}
+
 function resolveExplicitTargets(
-  sections: MarkdownSection[],
+  lines: string[],
   articleTitle: string,
   explicitTargets: IllustrateTargetInput[] | undefined,
   opts: Required<Pick<IllustrateOptions, 'style' | 'color'>>,
@@ -123,59 +316,45 @@ function resolveExplicitTargets(
   markdownDir: string,
   client: string | undefined,
 ): IllustrationOutlineEntry[] {
-  if (!explicitTargets?.length) {
-    throw new Error('Explicit inline targets are required. Pass --target "<section heading>::<inlineType>" and let the agent choose them from the references.');
-  }
-
   const imageSystem = loadClientImageSystem(client);
-  const usedSectionIndexes = new Set<number>();
+  const resolvedTargets = resolveIllustrationTargets(lines, explicitTargets, articleTitle);
 
-  return explicitTargets.map((target, index) => {
-    const expectedHeading = target.heading.trim();
-    if (!expectedHeading) {
-      throw new Error(`Inline target ${index + 1} is missing a section heading.`);
-    }
-
-    const sectionIndex = sections.findIndex((section, candidateIndex) => (
-      !usedSectionIndexes.has(candidateIndex) && section.headingText === expectedHeading
-    ));
-
-    if (sectionIndex < 0) {
-      throw new Error(`Inline target section not found: ${expectedHeading}`);
-    }
-
-    usedSectionIndexes.add(sectionIndex);
-    const section = sections[sectionIndex]!;
+  return resolvedTargets.map((resolvedTarget, index) => {
     const fileName = `inline-${String(index + 1).padStart(2, '0')}.png`;
     const outputPath = join(imageDir, fileName);
     const markdownPath = relative(markdownDir, outputPath).replace(/\\/g, '/');
     const promptSpec = buildInlineImagePrompt({
       articleTitle,
-      sectionHeading: section.headingText,
-      contentLines: section.contentLines,
-      inlineType: target.inlineType,
+      sectionHeading: resolvedTarget.sectionHeading,
+      contentLines: resolvedTarget.contentLines,
+      inlineType: explicitTargets?.[index]?.inlineType,
       styleText: opts.style,
       color: opts.color,
       imageSystem,
     });
 
     return {
-      section,
-      visualContent: buildVisualContent(section),
+      target: resolvedTarget,
+      visualContent: buildVisualContent(resolvedTarget),
       outputPath,
       markdownPath,
       prompt: promptSpec.prompt,
-      alt: target.alt?.trim() || section.headingText || `inline-${index + 1}`,
+      alt: explicitTargets?.[index]?.alt?.trim() || resolvedTarget.positionLabel || `inline-${index + 1}`,
       inlineType: promptSpec.inlineType,
       styleKey: promptSpec.styleKey,
     };
   });
 }
 
-function injectImages(lines: string[], targets: IllustrationOutlineEntry[]): string {
+export function injectImagesAtResolvedTargets(
+  lines: string[],
+  targets: Array<ResolvedIllustrationTarget & { markdownPath: string; alt: string }>,
+): string {
   const insertions = new Map<number, string[]>();
   for (const target of targets) {
-    insertions.set(target.section.startLine, [
+    const existing = insertions.get(target.insertAfterLine) ?? [];
+    insertions.set(target.insertAfterLine, [
+      ...existing,
       '',
       `![${target.alt}](${target.markdownPath})`,
       '',
@@ -215,7 +394,7 @@ function renderOutlineMarkdown(title: string, targets: IllustrationOutlineEntry[
   targets.forEach((target, index) => {
     parts.push(`## Illustration ${index + 1}`);
     parts.push('');
-    parts.push(`**Position**: ${target.section.headingText}`);
+    parts.push(`**Position**: ${target.target.positionLabel}`);
     parts.push(`**Type**: ${target.inlineType}`);
     parts.push(`**Visual Content**: ${target.visualContent}`);
     parts.push(`**Filename**: ${basename(target.outputPath)}`);
@@ -247,9 +426,8 @@ export async function illustrateMarkdown(opts: IllustrateOptions): Promise<Illus
   mkdirSync(imageDir, { recursive: true });
   mkdirSync(promptsDir, { recursive: true });
 
-  const sections = splitSections(lines);
   const targets = resolveExplicitTargets(
-    sections,
+    lines,
     title,
     opts.targets,
     {
@@ -279,7 +457,14 @@ export async function illustrateMarkdown(opts: IllustrateOptions): Promise<Illus
     }
   }
 
-  const illustratedMarkdown = injectImages(lines, targets);
+  const illustratedMarkdown = injectImagesAtResolvedTargets(
+    lines,
+    targets.map(target => ({
+      ...target.target,
+      markdownPath: target.markdownPath,
+      alt: target.alt,
+    })),
+  );
   writeFileSync(outputPath, illustratedMarkdown, 'utf-8');
 
   return {
@@ -288,7 +473,7 @@ export async function illustrateMarkdown(opts: IllustrateOptions): Promise<Illus
     imageCount: targets.length,
     imagePaths: targets.map(target => target.outputPath),
     targets: targets.map(target => ({
-      heading: target.section.headingText,
+      heading: target.target.positionLabel,
       prompt: target.prompt,
       outputPath: target.outputPath,
       inlineType: target.inlineType,

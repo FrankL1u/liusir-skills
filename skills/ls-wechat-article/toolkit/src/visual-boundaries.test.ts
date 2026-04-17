@@ -7,7 +7,11 @@ import test from 'node:test';
 import { previewHtml } from './converter.js';
 import { buildCoverImagePrompt, buildInlineImagePrompt } from './image-style-system.js';
 import { calculateAspectCrop, needsAspectNormalization } from './image-gen.js';
-import { illustrateMarkdown } from './illustration-workflow.js';
+import {
+  illustrateMarkdown,
+  injectImagesAtResolvedTargets,
+  resolveIllustrationTargets,
+} from './illustration-workflow.js';
 
 test('buildCoverImagePrompt requires an explicit cover type', () => {
   assert.throws(
@@ -72,6 +76,141 @@ test('illustrateMarkdown requires explicit inline targets from the agent', async
   }
 
   rmSync(tempDir, { recursive: true, force: true });
+});
+
+test('resolveIllustrationTargets can match a paragraph anchor instead of only H2 headings', () => {
+  const lines = [
+    '# Hermes 最狠的，不是更聪明，而是让 Agent 开始长记性',
+    '',
+    '## 大多数 Agent 最大的问题，不是不会做事，而是每次都像第一次',
+    '很多 Agent 看上去会规划，也会调用工具。',
+    '',
+    '真正的问题是，它们做成过的事留不下来。',
+    '下一次遇到类似任务，还是从头再来。',
+    '',
+    '## Hermes 真正值钱的，不是会存 Skill，而是把 Skill 做成了闭环',
+    'Hermes 最值钱的一点，是它会把失败记录也写回 Skill。',
+    '这意味着经验不是静态模板，而是会被修补的资产。',
+    '',
+  ];
+
+  const targets = resolveIllustrationTargets(lines, [
+    {
+      heading: 'Hermes 最值钱的一点，是它会把失败记录也写回 Skill。',
+      inlineType: 'framework',
+    },
+  ]);
+
+  assert.equal(targets.length, 1);
+  assert.equal(targets[0]?.kind, 'paragraph');
+  assert.equal(targets[0]?.sectionHeading, 'Hermes 真正值钱的，不是会存 Skill，而是把 Skill 做成了闭环');
+  assert.match(targets[0]?.positionLabel ?? '', /Hermes 最值钱的一点/);
+});
+
+test('resolveIllustrationTargets still supports explicit H2 heading targets for backward compatibility', () => {
+  const lines = [
+    '# Hermes 最狠的，不是更聪明，而是让 Agent 开始长记性',
+    '',
+    '## Hermes 真正值钱的，不是会存 Skill，而是把 Skill 做成了闭环',
+    'Hermes 最值钱的一点，是它会把失败记录也写回 Skill。',
+    '',
+  ];
+
+  const targets = resolveIllustrationTargets(lines, [
+    {
+      heading: 'Hermes 真正值钱的，不是会存 Skill，而是把 Skill 做成了闭环',
+      inlineType: 'framework',
+    },
+  ]);
+
+  assert.equal(targets.length, 1);
+  assert.equal(targets[0]?.kind, 'section');
+  assert.equal(targets[0]?.positionLabel, 'Hermes 真正值钱的，不是会存 Skill，而是把 Skill 做成了闭环');
+});
+
+test('resolveIllustrationTargets can match intro paragraphs before the first H2', () => {
+  const lines = [
+    '---',
+    'title: 测试文章',
+    '---',
+    '# 测试文章',
+    '',
+    '开头这一段没有任何 H2，但它先把问题抛出来。',
+    '真正重要的是，这段导语本身就值得配图。',
+    '',
+    '## 第一部分',
+    '后面才开始进入正式分节。',
+    '',
+  ];
+
+  const targets = resolveIllustrationTargets(lines, [
+    {
+      heading: '真正重要的是，这段导语本身就值得配图。',
+      inlineType: 'scene',
+    },
+  ]);
+
+  assert.equal(targets.length, 1);
+  assert.equal(targets[0]?.kind, 'paragraph');
+  assert.equal(targets[0]?.sectionHeading, '测试文章');
+  assert.match(targets[0]?.positionLabel ?? '', /真正重要的是/);
+});
+
+test('resolveIllustrationTargets works even when the article has no H2 or H3 headings', () => {
+  const lines = [
+    '# 没有分节的文章',
+    '',
+    '第一段先讲为什么这个问题重要。',
+    '',
+    '第二段直接讲判断：没有 H2 也应该能配图。',
+    '否则文章结构一变，配图系统就挂了。',
+    '',
+  ];
+
+  const targets = resolveIllustrationTargets(lines, [
+    {
+      heading: '第二段直接讲判断：没有 H2 也应该能配图。',
+      inlineType: 'comparison',
+    },
+  ]);
+
+  assert.equal(targets.length, 1);
+  assert.equal(targets[0]?.kind, 'paragraph');
+  assert.equal(targets[0]?.sectionHeading, '没有分节的文章');
+  assert.match(targets[0]?.positionLabel ?? '', /第二段直接讲判断/);
+});
+
+test('injectImagesAtResolvedTargets inserts paragraph-targeted images after the matched paragraph block', () => {
+  const lines = [
+    '# Hermes 最狠的，不是更聪明，而是让 Agent 开始长记性',
+    '',
+    '## Hermes 真正值钱的，不是会存 Skill，而是把 Skill 做成了闭环',
+    'Hermes 最值钱的一点，是它会把失败记录也写回 Skill。',
+    '这意味着经验不是静态模板，而是会被修补的资产。',
+    '',
+    '再往后，Skill 会随着使用不断被修正。',
+    '',
+  ];
+
+  const [target] = resolveIllustrationTargets(lines, [
+    {
+      heading: 'Hermes 最值钱的一点，是它会把失败记录也写回 Skill。',
+      inlineType: 'framework',
+    },
+  ]);
+
+  const markdown = injectImagesAtResolvedTargets(lines, [
+    {
+      ...target!,
+      markdownPath: 'assets/inline-01.png',
+      alt: 'Hermes 技能闭环',
+    },
+  ]);
+
+  assert.match(
+    markdown,
+    /Hermes 最值钱的一点，是它会把失败记录也写回 Skill。\n这意味着经验不是静态模板，而是会被修补的资产。\n\n!\[Hermes 技能闭环\]\(assets\/inline-01\.png\)\n\n再往后，Skill 会随着使用不断被修正。\n/s,
+  );
 });
 
 test('article images normalize fixed-size outputs back to 16:9', () => {

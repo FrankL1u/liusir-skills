@@ -153,10 +153,11 @@ Ask the user about:
 After that intake, the agent must make the actual visual decisions before invoking the CLI:
 
 - choose one explicit `cover type`
-- choose the exact inline target sections
-- choose one explicit `inline type` for each target section
+- choose the exact inline target positions
+- prefer paragraph/content-block anchors over section headings
+- choose one explicit `inline type` for each target position
 
-Do not ask the toolkit to infer article type, image type, or target sections from the Markdown.
+Do not ask the toolkit to infer article type, image type, or target positions from the Markdown.
 
 Defaulting rules:
 
@@ -172,11 +173,11 @@ Command mapping:
 
 - `cover + inline images`
   - run `cli.js cover` with the selected `--style` and explicit `--type`
-  - then run `cli.js illustrate` with the selected `--style` and explicit `--target "{heading}::{inline_type}"` entries
+  - then run `cli.js illustrate` with the selected `--style` and explicit `--target "{position_anchor}::{inline_type}"` entries
 - `cover only`
   - run `cli.js cover` with the selected `--style` and explicit `--type`
 - `inline only`
-  - run `cli.js illustrate` with the selected `--style` and explicit `--target "{heading}::{inline_type}"` entries
+  - run `cli.js illustrate` with the selected `--style` and explicit `--target "{position_anchor}::{inline_type}"` entries
 - `no images`
   - skip Step 6 and continue to Step 7
 
@@ -184,7 +185,8 @@ Parameter mapping:
 
 - pass the chosen style direction to `--style`
 - pass the agent-chosen cover type to `cli.js cover --type {hero|conceptual|typography|metaphor|scene|minimal}`
-- pass each agent-chosen inline target to `cli.js illustrate --target "{heading}::{framework|flowchart|comparison|infographic|scene|timeline}"`
+- pass each agent-chosen inline target to `cli.js illustrate --target "{position_anchor}::{framework|flowchart|comparison|infographic|scene|timeline}"`
+- `position_anchor` may be either an exact H2/H3 heading or a distinctive paragraph/content-block excerpt
 - use inline density only to decide how many targets to choose; do not pass density to the CLI as a substitute for explicit targets
 - do not add extra orchestration layers; the agent should call the existing `cover` and `illustrate` commands directly
 

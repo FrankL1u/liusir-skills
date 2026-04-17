@@ -186,7 +186,7 @@ Treat `--step N` as an explicit routing and pause directive.
 9. Step 5 is two-stage: `5A auto-fix` then `5B editorial QA`.
 10. Step 5B must write `quality-report.md` beside the article bundle.
 11. Before generating visuals, ask about image scope, style, and inline image density unless the user already specified them.
-12. In Step 6, the agent must choose the explicit cover type and explicit inline targets before calling toolkit commands. Do not let the toolkit infer them from article content.
+12. In Step 6, the agent must choose the explicit cover type and explicit inline targets before calling toolkit commands. Prefer paragraph/content-block anchors; use H2/H3 headings only as fallback. Do not let the toolkit infer them from article content.
 13. Before preview or publish, ask for a theme or explicitly state the chosen theme.
 14. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
 15. If publishing fails, fall back to local preview instead of stopping the workflow.

@@ -191,7 +191,7 @@ node dist/cli.js editorial-qa article.md --client demo
 node dist/cli.js theme-preview article.md
 
 # 正文配图
-node dist/cli.js illustrate article.md --client demo --style editorial --target "执行闭环::flowchart" --target "验证层::framework" --provider qwen
+node dist/cli.js illustrate article.md --client demo --style editorial --target "先定义输入，再定义输出，最后定义回看路径::flowchart" --target "不要把验证留到最后，应该让验证跟执行一起发生::framework" --provider qwen
 
 # 生成封面
 node dist/cli.js cover article.md --client demo --style blueprint --type conceptual --provider openai
@@ -208,7 +208,7 @@ node dist/build-playbook.js --client demo
 
 发布时如果不传 `--cover`，工具会尝试使用正文第一张图片作为草稿封面。  
 `editorial-qa` 会把 `quality-report.md` 写进文章 bundle，让 Step 5 的判断有明确产物，而不是只留在 agent 口头说明里。  
-`illustrate` 默认会把本次文章产物写入 `{runtime_root}/output/{client}/{date}-{title-slug}/`，其中包含 `article.md`、`assets/` 和 `prompts/`。toolkit 不再自己决定该配哪些小节、该用什么图片类型；这些都要由 agent 先选好，再显式传入 `--target`。
+`illustrate` 默认会把本次文章产物写入 `{runtime_root}/output/{client}/{date}-{title-slug}/`，其中包含 `article.md`、`assets/` 和 `prompts/`。toolkit 不再自己决定该配哪些位置、该用什么图片类型；这些都要由 agent 先选好，再显式传入 `--target`。优先传段落/内容块锚点，旧的标题 target 继续兼容，作为 fallback。
 
 公共图片风格库位于 [references/image-system.yaml](./references/image-system.yaml)。运行态 client 数据位于 `{runtime_root}/clients/{client}/style.yaml`，只配置默认主题、写作画像和 client 覆盖项。
 
