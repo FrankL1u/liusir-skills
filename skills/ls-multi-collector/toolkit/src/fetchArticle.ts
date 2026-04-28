@@ -24,6 +24,7 @@ interface ArticleRecord {
   markdownText: string;
   raw: unknown;
   images: ArticleImage[];
+  threadItems?: XThreadItem[];
 }
 
 export interface FetchArticleResult {
@@ -33,6 +34,58 @@ export interface FetchArticleResult {
   outputDir: string;
   artifacts: string[];
   articlePath: string;
+}
+
+interface XUserSummary {
+  name: string | null;
+  screenName: string | null;
+}
+
+interface XMetrics {
+  replyCount: number | null;
+  retweetCount: number | null;
+  quoteCount: number | null;
+  likeCount: number | null;
+  bookmarkCount: number | null;
+  viewCount: number | null;
+}
+
+interface XVideoFormat {
+  url: string;
+  formatId: string | null;
+  width: number | null;
+  height: number | null;
+  resolution: string | null;
+  ext: string | null;
+  protocol: string | null;
+  tbr: number | null;
+  filesizeApprox: number | null;
+}
+
+interface XVideoResource {
+  sourceUrl: string;
+  recommendedUrl: string | null;
+  resolution: string | null;
+  duration: number | null;
+  filesizeApprox: number | null;
+  thumbnail: string | null;
+  formats: XVideoFormat[];
+  error?: string;
+}
+
+export interface XThreadItem {
+  id: string | null;
+  index: number;
+  text: string;
+  user: XUserSummary;
+  createdAt: string | null;
+  metrics: XMetrics;
+  isReply: boolean;
+  isQuote: boolean;
+  isRetweet: boolean;
+  inReplyToTweetId: string | null;
+  media: ArticleImage[];
+  video: XVideoResource | null;
 }
 
 export async function fetchArticle(rawInput: string): Promise<FetchArticleResult> {
@@ -53,15 +106,19 @@ export async function fetchArticle(rawInput: string): Promise<FetchArticleResult
     authorName: record.authorName,
     publishedAt: record.publishedAt,
     coverUrl: record.coverUrl,
-    imageCount: record.images.length
+    imageCount: record.images.length,
+    ...(record.threadItems ? xMetadataAdditions(record.threadItems) : {})
   });
+  const threadItemsPath = record.threadItems
+    ? await writeJsonFile(bundle.dir, "thread_items.json", record.threadItems)
+    : null;
 
   return {
     action: "fetch-article",
     platform: record.platform,
     sourceUrl: record.sourceUrl,
     outputDir: bundle.dir,
-    artifacts: [articlePath, metadataPath],
+    artifacts: [articlePath, metadataPath, threadItemsPath].filter((item): item is string => Boolean(item)),
     articlePath
   };
 }
@@ -143,8 +200,10 @@ async function fetchXArticle(sourceUrl: string): Promise<ArticleRecord> {
   const items = extractXItems(raw);
   const first = items[0] ?? {};
   const title = payloadString(raw, "title") || (authorNameFromX(first) ? `Thread by @${authorNameFromX(first)}` : "X Post");
-  const markdownText = renderXMarkdown(items);
   const images = dedupImages(items.flatMap((item) => collectXMedia(item)));
+  const videosByTweetId = await resolveXVideoResources(items);
+  const markdownText = renderXMarkdown(items, videosByTweetId);
+  const threadItems = toXThreadItems(items, videosByTweetId);
   return {
     platform: "x",
     sourceUrl,
@@ -154,7 +213,8 @@ async function fetchXArticle(sourceUrl: string): Promise<ArticleRecord> {
     coverUrl: images[0]?.src ?? null,
     markdownText,
     raw,
-    images
+    images,
+    threadItems
   };
 }
 
@@ -323,18 +383,197 @@ function extractXItems(payload: unknown): Record<string, unknown>[] {
   return payload && typeof payload === "object" ? [payload as Record<string, unknown>] : [];
 }
 
-function renderXMarkdown(items: Record<string, unknown>[]): string {
-  return items
-    .map((item, index) => {
-      const heading = index === 0 ? "## 主推文" : `## 线程 ${index}`;
-      const body = firstDefinedString(item.text, item.full_text) ?? "";
-      const media = collectXMedia(item)
-        .map((entry) => `![${entry.alt}](${entry.src})`)
-        .join("\n\n");
-      return [heading, body.trim(), media].filter(Boolean).join("\n\n");
-    })
+export function renderXMarkdown(items: Record<string, unknown>[], videosByTweetId = new Map<string, XVideoResource>()): string {
+  const displayItems = selectXMarkdownItems(items);
+  return displayItems
+    .map((entry) => renderXMarkdownItem(entry.item, entry.heading, videosByTweetId))
     .filter(Boolean)
     .join("\n\n");
+}
+
+function selectXMarkdownItems(items: Record<string, unknown>[]): Array<{ item: Record<string, unknown>; heading: string }> {
+  const root = items[0];
+  if (!root) {
+    return [];
+  }
+  const rootUser = userFromX(root);
+  const rootAuthorKey = xUserKey(rootUser);
+  const rootAuthorItems = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => xUserKey(userFromX(item)) === rootAuthorKey);
+  const otherItems = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => xUserKey(userFromX(item)) !== rootAuthorKey)
+    .filter(({ item }) => booleanFromX(item.isReply, Boolean(firstDefinedString(item.inReplyToTweetId, item.in_reply_to_status_id_str))))
+    .sort((a, b) => {
+      const scoreDelta = xEngagementScore(b.item) - xEngagementScore(a.item);
+      return scoreDelta !== 0 ? scoreDelta : a.index - b.index;
+    })
+    .slice(0, 10);
+  return [
+    ...rootAuthorItems.map(({ item, index }, authorIndex) => ({
+      item,
+      heading: authorIndex === 0 ? "## 主推文" : `## 主作者线程 ${index}`
+    })),
+    ...(otherItems.length ? [{ item: null as unknown as Record<string, unknown>, heading: "## 高互动其他线程" }] : []),
+    ...otherItems.map(({ item, index }) => ({
+      item,
+      heading: `### 线程 ${index}`
+    }))
+  ];
+}
+
+function renderXMarkdownItem(item: Record<string, unknown>, heading: string, videosByTweetId: Map<string, XVideoResource>): string {
+  if (heading === "## 高互动其他线程") {
+    return heading;
+  }
+  const body = firstDefinedString(item.text, item.full_text) ?? "";
+  const id = firstDefinedString(item.id, item.id_str);
+  const video = id ? videosByTweetId.get(id) ?? null : null;
+  const user = userFromX(item);
+  const meta = [
+    `作者：${formatXUser(user)}`,
+    firstDefinedString(item.createdAt, item.created_at) ? `时间：${firstDefinedString(item.createdAt, item.created_at)}` : null,
+    `互动：${formatXMetrics(metricsFromX(item))}`,
+    video ? formatXVideo(video) : null
+  ].filter(Boolean).join("\n");
+  const media = collectXMedia(item)
+    .map((entry) => `![${entry.alt}](${entry.src})`)
+    .join("\n\n");
+  return [heading, meta, body.trim(), media].filter(Boolean).join("\n\n");
+}
+
+function xUserKey(user: XUserSummary): string {
+  return user.screenName ?? user.name ?? "";
+}
+
+function xEngagementScore(item: Record<string, unknown>): number {
+  const metrics = metricsFromX(item);
+  const values = [
+    metrics.replyCount,
+    metrics.retweetCount,
+    metrics.quoteCount,
+    metrics.likeCount,
+    metrics.bookmarkCount
+  ];
+  return values.reduce<number>((total, value) => total + (value ?? 0), 0);
+}
+
+export function toXThreadItems(items: Record<string, unknown>[], videosByTweetId = new Map<string, XVideoResource>()): XThreadItem[] {
+  return items.map((item, index) => ({
+    id: firstDefinedString(item.id, item.id_str),
+    index,
+    text: firstDefinedString(item.text, item.full_text) ?? "",
+    user: userFromX(item),
+    createdAt: firstDefinedString(item.createdAt, item.created_at),
+    metrics: metricsFromX(item),
+    isReply: booleanFromX(item.isReply, Boolean(firstDefinedString(item.inReplyToTweetId, item.in_reply_to_status_id_str))),
+    isQuote: booleanFromX(item.isQuote, false),
+    isRetweet: booleanFromX(item.isRetweet, false),
+    inReplyToTweetId: firstDefinedString(item.inReplyToTweetId, item.in_reply_to_status_id_str),
+    media: collectXMedia(item),
+    video: xVideoForItem(item, videosByTweetId)
+  }));
+}
+
+async function resolveXVideoResources(items: Record<string, unknown>[]): Promise<Map<string, XVideoResource>> {
+  const entries = await Promise.all(items.map(async (item): Promise<[string, XVideoResource] | null> => {
+    if (!itemHasVideoMedia(item)) {
+      return null;
+    }
+    const id = firstDefinedString(item.id, item.id_str);
+    const user = userFromX(item);
+    if (!id || !user.screenName) {
+      return null;
+    }
+    const sourceUrl = `https://x.com/${user.screenName}/status/${id}`;
+    try {
+      const stdout = await runCommand("yt-dlp", ["--dump-json", "--no-playlist", sourceUrl]);
+      const payload = JSON.parse(stdout) as Record<string, unknown>;
+      return [id, xVideoResourceFromYtDlp(sourceUrl, payload)];
+    } catch (error) {
+      return [id, {
+        sourceUrl,
+        recommendedUrl: null,
+        resolution: null,
+        duration: null,
+        filesizeApprox: null,
+        thumbnail: collectXMedia(item)[0]?.src ?? null,
+        formats: [],
+        error: error instanceof Error ? error.message : String(error)
+      }];
+    }
+  }));
+  return new Map(entries.filter((entry): entry is [string, XVideoResource] => Boolean(entry)));
+}
+
+function itemHasVideoMedia(item: Record<string, unknown>): boolean {
+  const mediaValue = (item as { media?: unknown[] }).media;
+  const media = Array.isArray(mediaValue) ? mediaValue : [];
+  return media.some((entry) => typeof entry === "object" && entry !== null && (entry as { type?: unknown }).type === "video");
+}
+
+function xVideoForItem(item: Record<string, unknown>, videosByTweetId: Map<string, XVideoResource>): XVideoResource | null {
+  const id = firstDefinedString(item.id, item.id_str);
+  return id ? videosByTweetId.get(id) ?? null : null;
+}
+
+function xVideoResourceFromYtDlp(sourceUrl: string, payload: Record<string, unknown>): XVideoResource {
+  const rawFormats = Array.isArray(payload.formats) ? payload.formats : [];
+  const formats = rawFormats
+    .filter((format): format is Record<string, unknown> => typeof format === "object" && format !== null)
+    .map(toXVideoFormat)
+    .filter((format): format is XVideoFormat => Boolean(format));
+  const selected = selectRecommendedXVideoFormat(rawFormats);
+  return {
+    sourceUrl,
+    recommendedUrl: selected?.url ?? null,
+    resolution: selected?.resolution ?? null,
+    duration: numberFromX(payload.duration),
+    filesizeApprox: selected?.filesizeApprox ?? null,
+    thumbnail: firstDefinedString(payload.thumbnail),
+    formats
+  };
+}
+
+function toXVideoFormat(format: Record<string, unknown>): XVideoFormat | null {
+  const url = firstDefinedString(format.url);
+  if (!url) {
+    return null;
+  }
+  const width = numberFromX(format.width);
+  const height = numberFromX(format.height);
+  return {
+    url,
+    formatId: firstDefinedString(format.format_id, format.formatId),
+    width,
+    height,
+    resolution: firstDefinedString(format.resolution) ?? (width && height ? `${width}x${height}` : null),
+    ext: firstDefinedString(format.ext),
+    protocol: firstDefinedString(format.protocol),
+    tbr: numberFromX(format.tbr),
+    filesizeApprox: numberFromX(format.filesize_approx, format.filesizeApprox)
+  };
+}
+
+export function selectRecommendedXVideoFormat(formats: unknown[]): XVideoFormat | null {
+  const candidates = formats
+    .filter((format): format is Record<string, unknown> => typeof format === "object" && format !== null)
+    .map(toXVideoFormat)
+    .filter((format): format is XVideoFormat => Boolean(format))
+    .filter((format) => format.ext === "mp4" && format.url.startsWith("https://") && (format.height ?? 0) > 0);
+  if (candidates.length === 0) {
+    return null;
+  }
+  const sorted = [...candidates].sort((a, b) => {
+    const aDistance = Math.abs((a.height ?? 0) - 720);
+    const bDistance = Math.abs((b.height ?? 0) - 720);
+    if (aDistance !== bDistance) {
+      return aDistance - bDistance;
+    }
+    return (a.filesizeApprox ?? Number.MAX_SAFE_INTEGER) - (b.filesizeApprox ?? Number.MAX_SAFE_INTEGER);
+  });
+  return sorted[0];
 }
 
 function collectXMedia(item: Record<string, unknown>): ArticleImage[] {
@@ -353,14 +592,105 @@ function collectXMedia(item: Record<string, unknown>): ArticleImage[] {
 }
 
 function authorNameFromX(item: Record<string, unknown>): string | null {
+  const user = userFromX(item);
+  return user.screenName ?? user.name;
+}
+
+function userFromX(item: Record<string, unknown>): XUserSummary {
   const user = item.user;
   if (user && typeof user === "object") {
-    const candidate = (user as { screenName?: string; name?: string }).screenName || (user as { screenName?: string; name?: string }).name;
-    if (candidate) {
-      return candidate;
+    const record = user as { screenName?: unknown; name?: unknown; username?: unknown };
+    return {
+      name: firstDefinedString(record.name),
+      screenName: firstDefinedString(record.screenName, record.username)
+    };
+  }
+  return {
+    name: firstDefinedString(item.authorName, item.name),
+    screenName: firstDefinedString(item.author, item.screenName, item.username)
+  };
+}
+
+function metricsFromX(item: Record<string, unknown>): XMetrics {
+  return {
+    replyCount: numberFromX(item.replyCount, item.reply_count),
+    retweetCount: numberFromX(item.retweetCount, item.retweet_count),
+    quoteCount: numberFromX(item.quoteCount, item.quote_count),
+    likeCount: numberFromX(item.likeCount, item.favorite_count, item.like_count),
+    bookmarkCount: numberFromX(item.bookmarkCount, item.bookmark_count),
+    viewCount: numberFromX(item.viewCount, item.view_count)
+  };
+}
+
+function formatXUser(user: XUserSummary): string {
+  if (user.name && user.screenName) {
+    return `${user.name} (@${user.screenName})`;
+  }
+  if (user.screenName) {
+    return `@${user.screenName}`;
+  }
+  return user.name ?? "未知";
+}
+
+function formatXMetrics(metrics: XMetrics): string {
+  return [
+    ["评论", metrics.replyCount],
+    ["转发", metrics.retweetCount],
+    ["引用", metrics.quoteCount],
+    ["点赞", metrics.likeCount],
+    ["收藏", metrics.bookmarkCount],
+    ["查看", metrics.viewCount]
+  ].map(([label, value]) => `${label} ${value ?? ""}`.trim()).join(" · ");
+}
+
+function formatXVideo(video: XVideoResource): string {
+  const pieces = [
+    video.recommendedUrl ? `视频：${video.recommendedUrl}` : "视频：未解析到可用 mp4",
+    video.resolution ? `规格：${video.resolution}` : null,
+    video.duration !== null ? `时长：${Math.round(video.duration)}s` : null,
+    video.filesizeApprox !== null ? `约 ${formatBytes(video.filesizeApprox)}` : null
+  ].filter(Boolean);
+  return pieces.join(" · ");
+}
+
+function formatBytes(value: number): string {
+  if (value >= 1024 * 1024) {
+    return `${(value / 1024 / 1024).toFixed(1)}MB`;
+  }
+  if (value >= 1024) {
+    return `${(value / 1024).toFixed(1)}KB`;
+  }
+  return `${value}B`;
+}
+
+function xMetadataAdditions(threadItems: XThreadItem[]): Record<string, unknown> {
+  const authors = Array.from(new Set(threadItems.map((item) => item.user.screenName ?? item.user.name).filter(Boolean)));
+  const rootUser = threadItems[0]?.user;
+  return {
+    itemCount: threadItems.length,
+    authors,
+    rootAuthorName: rootUser?.name ?? null,
+    rootAuthorScreenName: rootUser?.screenName ?? null
+  };
+}
+
+function numberFromX(...values: unknown[]): number | null {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
     }
   }
-  return typeof item.author === "string" ? item.author : null;
+  return null;
+}
+
+function booleanFromX(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
 }
 
 function dedupImages(images: ArticleImage[]): ArticleImage[] {

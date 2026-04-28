@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "tsx --test src/**/*.test.ts",
     "doctor": "tsx src/cli.ts doctor",
     "download-video": "tsx src/cli.ts download-video",
     "transcript-video": "tsx src/cli.ts transcript-video",
