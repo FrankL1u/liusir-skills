@@ -66,8 +66,8 @@ function isWithin(basePath: string, targetPath: string): boolean {
   return rel === '' || (!rel.startsWith('..') && !rel.startsWith(`..${sep}`) && rel !== '..');
 }
 
-export function getProjectRuntimeRoot(cwd = process.cwd()): string {
-  return resolve(cwd, `.${SKILL_KEY}`);
+export function getProjectRuntimeRoot(skillRoot = SKILL_ROOT): string {
+  return resolve(skillRoot, `.${SKILL_KEY}`);
 }
 
 export function getUserRuntimeRoot(homeDir = os.homedir()): string {
@@ -79,10 +79,13 @@ export function getLegacyRuntimeRoot(legacyRoot = SKILL_ROOT): string {
 }
 
 export function getRuntimeRoots(options: RuntimePathOptions = {}): RuntimeRoots {
+  const legacyRoot = getLegacyRuntimeRoot(options.legacyRoot);
+  const cwd = resolve(options.cwd ?? process.cwd());
+  const projectBase = isWithin(legacyRoot, cwd) ? legacyRoot : cwd;
   return {
-    projectRoot: getProjectRuntimeRoot(options.cwd),
+    projectRoot: getProjectRuntimeRoot(projectBase),
     userRoot: getUserRuntimeRoot(options.homeDir),
-    legacyRoot: getLegacyRuntimeRoot(options.legacyRoot),
+    legacyRoot,
   };
 }
 

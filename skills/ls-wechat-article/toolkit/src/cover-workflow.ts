@@ -11,9 +11,14 @@ export interface GenerateCoverOptions {
   output?: string;
   provider?: string;
   style?: string;
+  palette?: string;
   color?: string;
   client?: string;
   type?: string;
+  mood?: string;
+  font?: string;
+  textLevel?: string;
+  aspect?: string;
 }
 
 export interface GenerateCoverResult {
@@ -61,6 +66,11 @@ export async function generateArticleCover(opts: GenerateCoverOptions): Promise<
     articleContent,
     styleText: opts.style ?? DEFAULT_STYLE,
     color: opts.color ?? '#3498db',
+    palette: opts.palette,
+    mood: opts.mood,
+    font: opts.font,
+    textLevel: opts.textLevel,
+    aspect: opts.aspect,
     imageSystem,
     requestedCoverType: opts.type,
   });
@@ -75,6 +85,7 @@ export async function generateArticleCover(opts: GenerateCoverOptions): Promise<
     fallbackCover: false,
     color: opts.color ?? '#3498db',
     mood: '',
+    negativePrompt: promptSpec.negativePrompt,
   });
 
   if (result.status !== 'ok') {

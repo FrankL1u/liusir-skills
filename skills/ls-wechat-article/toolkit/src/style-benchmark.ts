@@ -2,36 +2,17 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
 import { generateImageToFile, type ImageGenResult } from './image-gen.js';
+import { buildCoverImagePrompt, buildInlineImagePrompt } from './image-style-system.js';
 import { resolveWritableRuntimeRoot } from './runtime-paths.js';
+import { DEFAULT_VISUALS, loadVisualPromptSystem, type VisualDefinition } from './visual-prompt-system.js';
 
-export type BenchmarkStyleKey =
-  | 'notion'
-  | 'elegant'
-  | 'warm'
-  | 'minimal'
-  | 'blueprint'
-  | 'watercolor'
-  | 'editorial'
-  | 'scientific'
-  | 'lofi-doodle'
-  | 'multi-panel-manga'
-  | 'notebook-sketch'
-  | 'claymation';
+export type BenchmarkStyleKey = string;
 
 export type BenchmarkArticleTypeKey =
   | 'trend-judgment'
   | 'methodology-framework'
   | 'tool-review'
   | 'personal-narrative';
-
-interface StylePreset {
-  key: BenchmarkStyleKey;
-  name: string;
-  description: string;
-  sharedDirection: string;
-  coverDirection: string;
-  inlineDirection: string;
-}
 
 interface ArticleFixture {
   key: BenchmarkArticleTypeKey;
@@ -81,105 +62,6 @@ export interface StyleBenchmarkResult {
   articleTypes: BenchmarkArticleTypeKey[];
   cells: BenchmarkCellResult[];
 }
-
-const STYLE_PRESETS: Record<BenchmarkStyleKey, StylePreset> = {
-  notion: {
-    key: 'notion',
-    name: '极简手绘线条风',
-    description: '像知识卡片和 SaaS 说明图，克制、清爽、极简。',
-    sharedDirection: 'minimal hand-drawn notes, clean white background, thin lines, knowledge-sharing visual language',
-    coverDirection: 'single hero concept with clean labels, startup knowledge card aesthetic, polished but simple',
-    inlineDirection: 'section explanation visual, hand-drawn knowledge card, clear structure, light annotation',
-  },
-  elegant: {
-    key: 'elegant',
-    name: '精致优雅风',
-    description: '更成熟的商业视觉，秩序感强，适合思想领导力内容。',
-    sharedDirection: 'refined editorial composition, elegant spacing, premium presentation, tasteful restrained colors',
-    coverDirection: 'premium article cover with strong focal point, polished composition, thought-leadership mood',
-    inlineDirection: 'refined conceptual illustration, structured and graceful, premium magazine explainer feel',
-  },
-  warm: {
-    key: 'warm',
-    name: '温暖亲和风',
-    description: '柔和、友好、有人味，适合故事和轻解释。',
-    sharedDirection: 'warm friendly visual style, soft edges, approachable composition, gentle and welcoming, symbolic or stylized subjects',
-    coverDirection: 'friendly cover visual with emotional warmth and clear message, inviting and personal',
-    inlineDirection: 'warm section illustration, gentle explanatory visual, relatable and easy to understand',
-  },
-  minimal: {
-    key: 'minimal',
-    name: '极简禅意风',
-    description: '留白多，元素少，强调概念和秩序。',
-    sharedDirection: 'minimalist composition, generous whitespace, only essential elements, calm restrained visual tone',
-    coverDirection: 'minimal cover with one dominant concept and lots of space, highly distilled visual metaphor',
-    inlineDirection: 'highly distilled section visual, sparse elements, clear hierarchy, calm explanatory drawing',
-  },
-  blueprint: {
-    key: 'blueprint',
-    name: '技术蓝图风',
-    description: '工程、系统、结构感强，像架构图和蓝图草图。',
-    sharedDirection: 'technical blueprint aesthetic, structural lines, system diagram feeling, engineering clarity',
-    coverDirection: 'architectural technical cover, bold structural metaphor, system design visual language',
-    inlineDirection: 'technical section diagram, blueprint lines, architecture explanation, system relationships',
-  },
-  watercolor: {
-    key: 'watercolor',
-    name: '水彩柔和风',
-    description: '柔和艺术感，更自然、更有人情味。',
-    sharedDirection: 'watercolor illustration, soft pigment diffusion, organic shapes, artistic and warm',
-    coverDirection: 'watercolor article cover, soft emotional focal point, artistic storytelling composition',
-    inlineDirection: 'watercolor explanatory illustration, gentle educational tone, organic conceptual rendering',
-  },
-  editorial: {
-    key: 'editorial',
-    name: '杂志信息图风',
-    description: '编辑式概念图、结构图、科技解说图。',
-    sharedDirection: 'editorial diagram style, off-white paper background, black outlines, teal and orange accents, structured explanatory visual',
-    coverDirection: 'editorial magazine-style cover diagram, one strong framework metaphor, sharp explanatory composition',
-    inlineDirection: 'editorial section diagram, concept visualization, relationship map, structured explainer graphic',
-  },
-  scientific: {
-    key: 'scientific',
-    name: '学术精确图表风',
-    description: '更严谨、图表化、示意图化。',
-    sharedDirection: 'scientific diagram aesthetic, precise labels, measured structure, educational chart-like rendering',
-    coverDirection: 'scientific conceptual cover, precise schematic metaphor, analytical and rigorous tone',
-    inlineDirection: 'precise explanatory diagram, chart-like structure, rigorous educational visual',
-  },
-  'lofi-doodle': {
-    key: 'lofi-doodle',
-    name: '低保真手绘涂鸦风',
-    description: '像白板和草图本里的概念速写，随手但有亲和力。',
-    sharedDirection: 'lofi doodle style, black sketch lines, rough paper texture, whiteboard thinking, casual ideation energy',
-    coverDirection: 'single-page doodle cover, clear title area, rough sketch concept, playful explanatory vibe',
-    inlineDirection: 'rough doodle explainer, simple symbols and arrows, brainstorming note feeling',
-  },
-  'multi-panel-manga': {
-    key: 'multi-panel-manga',
-    name: '多格漫画说明风',
-    description: '多分镜、人物、拟声词和过程推进，适合教程与叙事。',
-    sharedDirection: 'multi-panel manga explainer, black and white comic screentones, expressive stylized manga characters, narrative progression',
-    coverDirection: 'manga-style cover poster with a strong main scene, comic energy, title integrated into the composition',
-    inlineDirection: 'four-panel or multi-panel explanatory manga, process storytelling, clear action progression',
-  },
-  'notebook-sketch': {
-    key: 'notebook-sketch',
-    name: '笔记本草图概念风',
-    description: '纸面草图、机械感、概念速写感强。',
-    sharedDirection: 'notebook sketch concept art, rough pen lines, notebook paper texture, invention sketch feel',
-    coverDirection: 'notebook-style conceptual cover drawing, bold hand-drawn mechanical metaphor, sketchbook energy',
-    inlineDirection: 'notebook concept sketch for a section, rough system drawing, handwritten-study vibe',
-  },
-  claymation: {
-    key: 'claymation',
-    name: '黏土定格玩具风',
-    description: '立体玩具感、软圆质感、色彩活泼。',
-    sharedDirection: 'claymation stop-motion style, tactile clay texture, playful miniatures, rounded forms, vivid handmade world',
-    coverDirection: 'claymation cover tableau, one central playful metaphor, tactile toy-like environment',
-    inlineDirection: 'claymation explainer scene, miniature props and stylized toy-like characters, friendly tangible storytelling',
-  },
-};
 
 const ARTICLE_FIXTURES: Record<BenchmarkArticleTypeKey, ArticleFixture> = {
   'trend-judgment': {
@@ -250,43 +132,62 @@ function buildOutputRoot(explicit?: string): string {
   return resolve(resolveWritableRuntimeRoot(), 'output', 'style-benchmark', currentDateString());
 }
 
-function buildPromptBase(style: StylePreset, article: ArticleFixture): string {
-  return [
-    `Style benchmark visual for article type "${article.name}"`,
-    `article title: "${article.title}"`,
-    `core thesis: ${article.thesis}`,
-    `visual style family: ${style.name}`,
-    `style description: ${style.description}`,
-    `shared direction: ${style.sharedDirection}`,
-    'Chinese article illustration benchmark',
-    'allow Chinese text when composition requires labels or title',
-    'avoid realistic human figures, photorealistic faces, lifelike hands, or real-person portrait composition',
-    'stylized symbols, icons, abstract forms, cartoon characters, manga figures, clay figures, and toy-like miniatures are allowed only when the chosen style strongly requires them',
-    'no watermark, no logo',
-    'publication-ready composition',
-  ].join(', ');
+function getBenchmarkStyleDefinitions(): Record<BenchmarkStyleKey, VisualDefinition> {
+  return Object.fromEntries(loadVisualPromptSystem().styles.map(style => [style.key, style]));
 }
 
-function buildCoverPrompt(style: StylePreset, article: ArticleFixture): string {
-  return [
-    buildPromptBase(style, article),
-    'image role: article cover',
-    `cover goal: ${article.coverGoal}`,
-    `cover direction: ${style.coverDirection}`,
-    'wide hero composition, strong first-glance impact, headline-friendly layout',
-  ].join(', ');
+function styleLabel(style: VisualDefinition | undefined, key: string): string {
+  return style?.zh ?? style?.key ?? key;
 }
 
-function buildInlinePrompt(style: StylePreset, article: ArticleFixture): string {
+function articleContent(article: ArticleFixture): string {
   return [
-    buildPromptBase(style, article),
-    'image role: inline article illustration',
-    `section title: ${article.inlineHeading}`,
-    `section purpose: ${article.inlinePurpose}`,
-    `section summary: ${article.inlineSummary}`,
-    `inline direction: ${style.inlineDirection}`,
-    'clear explanatory visual, optimized for reading inside a WeChat article body',
-  ].join(', ');
+    `# ${article.title}`,
+    '',
+    article.thesis,
+    '',
+    article.coverGoal,
+    '',
+    `## ${article.inlineHeading}`,
+    article.inlinePurpose,
+    article.inlineSummary,
+  ].join('\n');
+}
+
+function buildBenchmarkImageSystem(styleKey: string) {
+  const promptSystem = loadVisualPromptSystem();
+  return {
+    promptSystem,
+    visuals: {
+      ...DEFAULT_VISUALS,
+      style: styleKey,
+      cover: { ...DEFAULT_VISUALS.cover },
+      inline: { ...DEFAULT_VISUALS.inline },
+    },
+  };
+}
+
+function buildCoverPrompt(styleKey: string, article: ArticleFixture, color: string) {
+  return buildCoverImagePrompt({
+    articleTitle: article.title,
+    articleContent: articleContent(article),
+    styleText: styleKey,
+    color,
+    imageSystem: buildBenchmarkImageSystem(styleKey),
+    requestedCoverType: DEFAULT_VISUALS.cover.type,
+  });
+}
+
+function buildInlinePrompt(styleKey: string, article: ArticleFixture, color: string) {
+  return buildInlineImagePrompt({
+    articleTitle: article.title,
+    sectionHeading: article.inlineHeading,
+    contentLines: [article.inlinePurpose, article.inlineSummary],
+    inlineType: 'framework',
+    styleText: styleKey,
+    color,
+    imageSystem: buildBenchmarkImageSystem(styleKey),
+  });
 }
 
 async function generateAsset(
@@ -296,6 +197,7 @@ async function generateAsset(
   provider: string | undefined,
   color: string,
   size: 'cover' | 'article',
+  negativePrompt: string | undefined,
   skipExisting = false,
 ): Promise<BenchmarkAssetResult> {
   writeFileSync(promptFile, `${prompt}\n`, 'utf-8');
@@ -317,6 +219,7 @@ async function generateAsset(
       fallbackCover: false,
       color,
       mood: '',
+      negativePrompt,
     });
     return {
       status: result.status,
@@ -354,6 +257,7 @@ function summarizeExistingAsset(
 }
 
 function buildOverviewHtml(rootDir: string, cells: BenchmarkCellResult[], styles: BenchmarkStyleKey[], articleTypes: BenchmarkArticleTypeKey[]): string {
+  const styleDefinitions = getBenchmarkStyleDefinitions();
   const header = articleTypes
     .map(articleType => {
       const fixture = ARTICLE_FIXTURES[articleType];
@@ -363,7 +267,7 @@ function buildOverviewHtml(rootDir: string, cells: BenchmarkCellResult[], styles
 
   const rows = styles
     .map(styleKey => {
-      const style = STYLE_PRESETS[styleKey];
+      const style = styleDefinitions[styleKey];
       const tds = articleTypes
         .map(articleType => {
           const cell = cells.find(item => item.style === styleKey && item.articleType === articleType);
@@ -379,12 +283,12 @@ function buildOverviewHtml(rootDir: string, cells: BenchmarkCellResult[], styles
               <div class="cell">
                 <div class="asset">
                   <div class="label">封面</div>
-                  ${coverSrc ? `<img src="${coverSrc}" alt="${style.name} ${ARTICLE_FIXTURES[articleType].name} cover">` : `<div class="error">${cell.cover.status}: ${cell.cover.message ?? ''}</div>`}
+                  ${coverSrc ? `<img src="${coverSrc}" alt="${styleLabel(style, styleKey)} ${ARTICLE_FIXTURES[articleType].name} cover">` : `<div class="error">${cell.cover.status}: ${cell.cover.message ?? ''}</div>`}
                   <div class="meta"><a href="${coverPrompt}">prompt</a></div>
                 </div>
                 <div class="asset">
                   <div class="label">正文图</div>
-                  ${inlineSrc ? `<img src="${inlineSrc}" alt="${style.name} ${ARTICLE_FIXTURES[articleType].name} inline">` : `<div class="error">${cell.inline.status}: ${cell.inline.message ?? ''}</div>`}
+                  ${inlineSrc ? `<img src="${inlineSrc}" alt="${styleLabel(style, styleKey)} ${ARTICLE_FIXTURES[articleType].name} inline">` : `<div class="error">${cell.inline.status}: ${cell.inline.message ?? ''}</div>`}
                   <div class="meta"><a href="${inlinePrompt}">prompt</a></div>
                 </div>
               </div>
@@ -393,7 +297,7 @@ function buildOverviewHtml(rootDir: string, cells: BenchmarkCellResult[], styles
         })
         .join('');
 
-      return `<tr><th>${style.name}<br><small>${style.key}</small></th>${tds}</tr>`;
+      return `<tr><th>${styleLabel(style, styleKey)}<br><small>${styleKey}</small></th>${tds}</tr>`;
     })
     .join('');
 
@@ -438,16 +342,17 @@ function buildOverviewHtml(rootDir: string, cells: BenchmarkCellResult[], styles
 }
 
 function buildScoresMarkdown(cells: BenchmarkCellResult[], styles: BenchmarkStyleKey[], articleTypes: BenchmarkArticleTypeKey[]): string {
+  const styleDefinitions = getBenchmarkStyleDefinitions();
   const sections = styles.map(styleKey => {
-    const style = STYLE_PRESETS[styleKey];
+    const style = styleDefinitions[styleKey];
     const rows = articleTypes
       .map(articleType => {
         const article = ARTICLE_FIXTURES[articleType];
         const cell = cells.find(item => item.style === styleKey && item.articleType === articleType);
         return [
-          `## ${style.name} / ${article.name}`,
+          `## ${styleLabel(style, styleKey)} / ${article.name}`,
           '',
-          `- 风格 key：\`${style.key}\``,
+          `- 风格 key：\`${styleKey}\``,
           `- 文章类型：\`${article.key}\``,
           `- 封面状态：${cell?.cover.status ?? 'missing'}`,
           `- 正文图状态：${cell?.inline.status ?? 'missing'}`,
@@ -476,7 +381,7 @@ function buildScoresMarkdown(cells: BenchmarkCellResult[], styles: BenchmarkStyl
 }
 
 export function parseBenchmarkStyles(value?: string): BenchmarkStyleKey[] {
-  return parseCsvList(value, Object.keys(STYLE_PRESETS) as BenchmarkStyleKey[]);
+  return parseCsvList(value, Object.keys(getBenchmarkStyleDefinitions()) as BenchmarkStyleKey[]);
 }
 
 export function parseBenchmarkArticleTypes(value?: string): BenchmarkArticleTypeKey[] {
@@ -484,7 +389,8 @@ export function parseBenchmarkArticleTypes(value?: string): BenchmarkArticleType
 }
 
 export async function runStyleBenchmark(opts: StyleBenchmarkOptions = {}): Promise<StyleBenchmarkResult> {
-  const styles = opts.styles ?? (Object.keys(STYLE_PRESETS) as BenchmarkStyleKey[]);
+  const styleDefinitions = getBenchmarkStyleDefinitions();
+  const styles = opts.styles ?? (Object.keys(styleDefinitions) as BenchmarkStyleKey[]);
   const articleTypes = opts.articleTypes ?? (Object.keys(ARTICLE_FIXTURES) as BenchmarkArticleTypeKey[]);
   const rootDir = buildOutputRoot(opts.outputDir);
   const promptsRoot = join(rootDir, 'prompts');
@@ -495,47 +401,48 @@ export async function runStyleBenchmark(opts: StyleBenchmarkOptions = {}): Promi
   const cells: BenchmarkCellResult[] = [];
 
   for (const styleKey of styles) {
-    const style = STYLE_PRESETS[styleKey];
     for (const articleTypeKey of articleTypes) {
       const article = ARTICLE_FIXTURES[articleTypeKey];
-      const promptDir = join(promptsRoot, style.key, article.key);
-      const imageDir = join(imagesRoot, style.key, article.key);
+      const promptDir = join(promptsRoot, styleKey, article.key);
+      const imageDir = join(imagesRoot, styleKey, article.key);
       mkdirSync(promptDir, { recursive: true });
       mkdirSync(imageDir, { recursive: true });
 
-      const coverPrompt = buildCoverPrompt(style, article);
-      const inlinePrompt = buildInlinePrompt(style, article);
+      const coverPrompt = buildCoverPrompt(styleKey, article, opts.color ?? '#3498db');
+      const inlinePrompt = buildInlinePrompt(styleKey, article, opts.color ?? '#3498db');
       const coverPromptFile = join(promptDir, 'cover.prompt.txt');
       const inlinePromptFile = join(promptDir, 'inline.prompt.txt');
       const coverOutput = join(imageDir, 'cover.png');
       const inlineOutput = join(imageDir, 'inline.png');
 
       const cover = opts.summaryOnly
-        ? summarizeExistingAsset(coverOutput, coverPromptFile, coverPrompt)
+        ? summarizeExistingAsset(coverOutput, coverPromptFile, coverPrompt.prompt)
         : await generateAsset(
-            coverPrompt,
+            coverPrompt.prompt,
             coverPromptFile,
             coverOutput,
             opts.provider,
             opts.color ?? '#3498db',
             'cover',
+            coverPrompt.negativePrompt,
             opts.skipExisting,
           );
 
       const inline = opts.summaryOnly
-        ? summarizeExistingAsset(inlineOutput, inlinePromptFile, inlinePrompt)
+        ? summarizeExistingAsset(inlineOutput, inlinePromptFile, inlinePrompt.prompt)
         : await generateAsset(
-            inlinePrompt,
+            inlinePrompt.prompt,
             inlinePromptFile,
             inlineOutput,
             opts.provider,
             opts.color ?? '#3498db',
             'article',
+            inlinePrompt.negativePrompt,
             opts.skipExisting,
           );
 
       const cell: BenchmarkCellResult = {
-        style: style.key,
+        style: styleKey,
         articleType: article.key,
         cover,
         inline,
@@ -547,7 +454,7 @@ export async function runStyleBenchmark(opts: StyleBenchmarkOptions = {}): Promi
         inline.status === 'failed' ||
         (!opts.continueOnError && (cover.status !== 'ok' || inline.status !== 'ok'));
       if (hasFailure && !opts.continueOnError) {
-        throw new Error(`Benchmark generation failed for ${style.key}/${article.key}`);
+        throw new Error(`Benchmark generation failed for ${styleKey}/${article.key}`);
       }
     }
   }

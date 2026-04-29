@@ -7,8 +7,8 @@ Read `{runtime_root}/clients/{client}/style.yaml`.
 Routing:
 
 - If the client directory does not exist, proactively ask the user how they want to initialize the client, then continue with onboarding guidance from `references/operations.md`. 
-- If the user explicitly says `仅排版` / `仅发布` / `不要改内容`, skip directly to Step 7
-- If the user already provided raw Markdown without that restriction, skip drafting but still run Step 5A and Step 5B before Step 7
+- If the user explicitly says `仅排版` / `仅发布` / `不要改内容`, skip directly to Step 6
+- If the user already provided raw Markdown without that restriction, skip drafting but still run Step 4.5 before Step 6
 - If the user gave a concrete topic, skip Steps 2-3 and go directly to Step 3.5
 - If the user provided `--step N`, route directly to Step `N` and stop at that step's decision boundary
 
@@ -17,8 +17,8 @@ Routing:
 | User input | Skip | Start from |
 |------------|------|------------|
 | Specific topic | Steps 2-3 | Step 3.5 |
-| Raw Markdown with `仅排版` / `仅发布` / `不要改内容` | Steps 2-6 | Step 7 |
-| Raw Markdown without that restriction | Steps 2-4 | Step 5A |
+| Raw Markdown with `仅排版` / `仅发布` / `不要改内容` | Steps 2-5 | Step 6 |
+| Raw Markdown without that restriction | Steps 2-4 | Step 4.5 |
 | `--step N` | Depends on `N` | Step `N` |
 
 ## Step 2: Topic intake
@@ -81,10 +81,19 @@ Use `references/frameworks.md` and `references/article-archetypes.md`.
 
 ## Step 4: Article drafting
 
-Read `references/writing-guide.md` and `{runtime_root}/clients/{client}/playbook.md` if it exists.
+Read `references/writing-guide.md`, `references/seo-rules.md`, and `{runtime_root}/clients/{client}/playbook.md` if it exists.
 
 - Before drafting a new article, gather a small but fresh evidence pool: recent news, releases, product changes, market moves, or representative examples related to the article subject
 - If the article claims to cover “latest”, “recent”, “trends”, “行业动态”, or current-state judgment, do not proceed without fresh source inputs
+- Before drafting the body, run the title generation protocol from `references/seo-rules.md`
+  - extract the article's core claim
+  - identify the target reader and their likely concern
+  - choose 2-3 title motivation types
+  - generate at least 5 title candidates
+  - label each candidate by motivation type
+  - score the candidates
+  - select one title as the H1
+- Draft the article around the chosen title's promise; do not pick a title that the body cannot deliver
 - Draft the article to match the selected framework, `article_archetype`, and `output_shape`
 - Ground current-state claims, examples, and judgments in the fresh materials gathered before drafting
 - If Step 2 was skipped because the user gave a concrete topic, do this freshness research here before writing
@@ -105,108 +114,104 @@ Fallback:
 
 - If fresh-info search fails, tell the user the freshness limitation and either ask for source links or continue only if the user accepts a non-live draft
 
-## Step 5A: Auto-fix
-
-Read `references/rewrite-examples.md`.
-
-- Only apply shallow, deterministic edits
-- Remove mechanical AI-sounding phrasing
-- Replace generic tool names with already-mentioned concrete tools
-- Rewrite hypothetical examples into explicit `未亲测` disclosures when no real scene exists
-- Surface over-symmetry or list-heavy pacing as warnings instead of silently restructuring the article
-
-## Step 5B: Editorial QA
+## Step 4.5: Editorial QA
 
 Read `references/seo-rules.md` and `references/editorial-qa.md`.
 
-- Optimize title, digest, and tags
-- Check rhythm, specificity, and section pacing
+- Inspect the drafted article before any optional rewrite
+- Optimize title, digest, and tags as recommendations or safe metadata edits
+- Check rhythm, specificity, section pacing, source support, and live voice
+- Identify which problems require shallow edits and which require deeper revision if the user later asks for fixes
 - Write `quality-report.md` beside the article bundle
-- L3 and L4 warnings do not block Step 7
-- Only hard publish failures, missing title, or invalid structure can block Step 7
+- After QA, give the user a concise repair plan
+- L3 and L4 warnings do not block the workflow
+- Only hard publish failures, missing title, or invalid structure can block Step 6 later
 
-## Step 6: Visuals
+Step 4.5 is diagnostic first. Do not silently rewrite the article during QA.
+The repair plan must name the top fixes, classify them by priority, and state whether each fix would require a shallow edit or targeted section rewrite. Do not apply those fixes unless the user explicitly asks for revision.
 
-Read `references/visual-prompts.md`.
+## Step 5: Cover image
 
-This is the only mandatory question in auto mode unless the user already specified the answers.
+Read `references/visual-prompts.md` and `references/visual-prompt-system.md`.
 
-Preferred path: use `AskUserQuestion` when the host provides it.
-If `AskUserQuestion` is not available, ask a concise plain-text question that covers the same three decisions.
+Visual configuration is stored in `{runtime_root}/clients/{client}/style.yaml` under `visuals`.
 
-Ask the user about:
+If `visuals` is missing, ask the user for the complete first-run visual configuration.
+Every item may be skipped. When the user skips or does not set an item, use the default from `references/visual-prompt-system.md`, then write the resolved values into `style.yaml.visuals` and continue.
 
 1. Image scope
-   - `cover + inline images`
-   - `cover only`
-   - `inline only`
-   - `no images`
+   - `cover+inline`
+   - `cover-only`
+   - `inline-only`
+   - `none`
 2. Style direction
    - `follow article tone`
-   - or a configured style key / style name
-3. Inline image density
-   - `minimal` -> `1-2 images`
-   - `balanced` -> `3-5 images`
-   - `per-section` -> try to illustrate each strong section
-   - `custom` -> user specifies image count
+   - or a configured style key / style name from `references/visual-prompt-system.md`
+3. Palette
+   - `default`
+   - `macaron`
+   - `mono-ink`
+   - `neon`
+   - `warm`
+4. Cover type
+   - `typography` by default
+   - or `hero`, `conceptual`, `metaphor`, `scene`, `minimal`
+5. Cover mood
+   - `balanced` by default
+   - or `subtle`, `bold`
+6. Cover font
+   - `clean` by default
+   - or `handwritten`, `serif`, `display`
+7. Cover text level
+   - `title-only` by default
+   - or `none`, `title-subtitle`, `text-rich`
+8. Cover aspect
+   - `2.35:1` by default
+9. Inline density
+   - `balanced` by default (`3-5 images`)
+   - or `minimal`, `per-section`, `rich`, `none`
+10. Inline type default
+   - `auto` by default
+   - or `infographic`, `scene`, `flowchart`, `comparison`, `framework`, `timeline`
 
-After that intake, the agent must make the actual visual decisions before invoking the CLI:
+If `visuals` already exists, do not ask. Follow it.
 
-- choose one explicit `cover type`
-- choose the exact inline target positions
-- prefer paragraph/content-block anchors over section headings
-- choose one explicit `inline type` for each target position
+If the user changes visual settings for the current run, execute with the changed settings, then ask whether to write the changed `visuals` back for future runs. If the user says "以后都这样", write back directly.
 
-Do not ask the toolkit to infer article type, image type, or target positions from the Markdown.
-
-Defaulting rules:
-
-- If the user wants visuals but gives no style direction, default to `follow article tone`
-- If the user gives a style direction but no image scope, ask once for image scope before generating
-- If the user wants inline images but gives no density, default to `balanced`
-- If the user says nothing about image scope but still wants visuals, default to `cover + inline images`
-
-Generate images with `image-gen.js` using configured providers. If no provider is available, return prompt-only guidance and continue.
-Write prompts and generated images into the article bundle directory.
+Run cover generation only when `visuals.scope` is `cover+inline` or `cover-only`.
 
 Command mapping:
 
-- `cover + inline images`
-  - run `cli.js cover` with the selected `--style` and explicit `--type`
-  - then run `cli.js illustrate` with the selected `--style` and explicit `--target "{position_anchor}::{inline_type}"` entries
-- `cover only`
-  - run `cli.js cover` with the selected `--style` and explicit `--type`
-- `inline only`
-  - run `cli.js illustrate` with the selected `--style` and explicit `--target "{position_anchor}::{inline_type}"` entries
-- `no images`
-  - skip Step 6 and continue to Step 7
+- run `cli.js cover` with `--style`, `--palette`, `--type`, `--mood`, `--cover-font`, `--text-level`, and `--aspect`
+- default `--type` is `typography`
+- default `--text-level` is `title-only`
 
-Parameter mapping:
+If image generation fails, return prompt-only guidance and continue.
 
-- pass the chosen style direction to `--style`
-- pass the agent-chosen cover type to `cli.js cover --type {hero|conceptual|typography|metaphor|scene|minimal}`
-- pass each agent-chosen inline target to `cli.js illustrate --target "{position_anchor}::{framework|flowchart|comparison|infographic|scene|timeline}"`
+## Step 5.5: Inline images
+
+Run inline generation only when `visuals.scope` is `cover+inline` or `inline-only`.
+
+The toolkit must not infer image positions or image types. The agent chooses explicit targets before invoking the CLI:
+
+- choose exact inline target positions
+- prefer paragraph/content-block anchors over section headings
+- use H2/H3 headings only as fallback
+- convert `inline.type_default: auto` into one explicit inline type per target
+
+Default inline density:
+
+- `balanced` -> `3-5 images`
+
+Command mapping:
+
+- run `cli.js illustrate` with `--style`, `--palette`, and explicit `--target "{position_anchor}::{inline_type}"` entries
 - `position_anchor` may be either an exact H2/H3 heading or a distinctive paragraph/content-block excerpt
-- use inline density only to decide how many targets to choose; do not pass density to the CLI as a substitute for explicit targets
-- do not add extra orchestration layers; the agent should call the existing `cover` and `illustrate` commands directly
+- do not pass density to the CLI as a substitute for explicit targets
 
-Preferred configured styles:
+If `visuals.scope` is `none`, skip Step 5 and Step 5.5 and continue to Step 6.
 
-- `editorial` / `杂志信息图风`
-- `blueprint` / `技术蓝图风`
-- `notion` / `极简手绘线条风`
-- `warm` / `温暖亲和风`
-- `watercolor` / `水彩柔和风`
-- `scientific` / `学术精确图表风`
-- `lofi-doodle` / `低保真手绘涂鸦风`
-- `multi-panel-manga` / `多格漫画说明风`
-- `notebook-sketch` / `笔记本草图概念风`
-- `claymation` / `黏土定格玩具风`
-
-- In auto mode, after this one question is answered, continue through image generation.
-- If invoked via `--step 6`, ask the question, present the image plan, and stop for confirmation or selection.
-
-## Step 7: Format and publish
+## Step 6: Format and publish
 
 Use `cli.js publish` with theme settings from `style.yaml` or explicit overrides.
 
@@ -232,10 +237,10 @@ Fallback:
 
 Editorial QA interaction:
 
-- If Step 5 produced only L3/L4 warnings, continue
-- If Step 5 produced a fixed article and `quality-report.md`, publish the fixed article, not the pre-fix draft
+- If Step 4.5 produces only L3/L4 warnings, continue unless the user asks to revise
+- If Step 4.5 finds blocking issues, stop before publishing and report the required fixes
 
-## Step 8: History and learning
+## Step 7: History and learning
 
 - `cli.js publish` appends draft metadata to `{runtime_root}/clients/{client}/history.yaml` after draft creation succeeds
 - Client inference comes from the markdown path under `{runtime_root}/output/{client}/...`; if the path is custom, the agent may pass `--client {client}` explicitly

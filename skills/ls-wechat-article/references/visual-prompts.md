@@ -9,21 +9,23 @@
 
 ## Image Intake Before Generation
 
-Do not generate images silently. First confirm both:
+Do not generate images silently.
 
-1. **Whether the user wants images at all**
-2. **What style direction they want**
-3. **How dense the inline images should be**
+First read `{runtime_root}/clients/{client}/style.yaml`.
 
-If the host supports `AskUserQuestion`, use it for a structured intake.
-If not, ask a short plain-text question.
+- If `visuals` exists, use it without asking.
+- If `visuals` is missing, ask for the complete first-run visual configuration, then write `visuals`.
+- Every first-run field may be skipped. If skipped or unset, use the default from `references/visual-prompt-system.md`.
+- If the user changes visual settings for the current run, ask whether to save the changed `visuals` for next time.
+
+Use `references/visual-prompt-system.md` for machine-readable options, defaults, prompt templates, and generation constraints.
 
 Recommended image-scope options:
 
-- `cover + inline images`
-- `cover only`
-- `inline only`
-- `no images`
+- `cover+inline`
+- `cover-only`
+- `inline-only`
+- `none`
 
 Recommended style options:
 
@@ -39,50 +41,34 @@ Recommended style options:
 - `notebook-sketch` / `笔记本草图概念风`
 - `claymation` / `黏土定格玩具风`
 
-Recommended inline density options:
+Recommended first-run detail options:
 
-- `minimal` — 少量重点图（1-2 张）
-- `balanced` — 标准配图（3-5 张）
-- `per-section` — 尽量每个强信息小节都配图
-- `custom` — 用户自己指定数量
+- Palette: `default`, `macaron`, `mono-ink`, `neon`, `warm`
+- Cover type: `typography`, `hero`, `conceptual`, `metaphor`, `scene`, `minimal`
+- Cover mood: `balanced`, `subtle`, `bold`
+- Cover font: `clean`, `handwritten`, `serif`, `display`
+- Cover text level: `title-only`, `none`, `title-subtitle`, `text-rich`
+- Cover aspect: `2.35:1`
+- Inline density: `balanced`, `minimal`, `per-section`, `rich`, `none`
+- Inline type default: `auto`, `infographic`, `scene`, `flowchart`, `comparison`, `framework`, `timeline`
 
 Defaulting rules:
 
-- If the user wants visuals but gives no style, use `follow article tone`.
-- If the user gives a style but not an image scope, ask once for scope before generating.
-- If the user wants inline images but gives no density, use `balanced`.
-- Never infer `no images` just because the user did not mention visuals.
+- Default `cover.type`: `typography`
+- Default `cover.text_level`: `title-only`
+- Default `inline.density`: `balanced` (`3-5` images)
+- Default `inline.type_default`: `auto`
+- In first-run configuration, ask for all visual fields. Use defaults only when the user skips or leaves a field unset.
+- In later runs, do not ask again when `style.yaml.visuals` already exists.
 
-After intake, convert the decision into explicit execution inputs before calling the toolkit:
+Before calling the toolkit:
 
-- choose one `cover type`
+- pass the configured cover type and text level to Step 5 cover generation
 - choose the exact inline positions that deserve inline images
 - prefer paragraph/content-block anchors; use section headings only as fallback
 - choose one `inline type` for each chosen position
 
 The toolkit may read the selected target content to build prompts, but it must not decide which positions to illustrate or which image types to use.
-
-### 3 Creative Directions
-
-Generate all three. Auto mode selects Creative A. If the workflow starts from an explicit `--step` that requires human choice, present all three and wait for selection.
-
-**Creative A — Direct Impact**
-- The most literal visual metaphor for the article's core concept
-- Style: flat design, bold shapes, strong color contrast, geometric elements
-- Best for: data articles, tool recommendations, method guides, technical content
-- Prompt pattern: `[core concept as visual metaphor], flat design, bold [brand color] and white, geometric shapes, minimalist, clean background, no text no letters no words, 2.35:1 aspect ratio, leave space on left third for title overlay`
-
-**Creative B — Atmospheric**
-- Creates mood and emotional context for the article
-- Style: soft gradients, cinematic lighting, warm/cool tones matched to article emotion
-- Best for: story articles, opinion pieces, personal narratives, human-interest content
-- Prompt pattern: `[scene that evokes the article's emotion], cinematic lighting, [warm/cool] color palette centered on [brand color], atmospheric, soft focus background, depth of field, no text no letters no words, 2.35:1 aspect ratio, leave space for title overlay`
-
-**Creative C — Information Visual**
-- Graphical representation of the core data, process, or structure
-- Style: clean infographic aesthetic, icons, data visualization elements
-- Best for: comparison articles, listicles, process guides, trend analysis
-- Prompt pattern: `[abstract representation of data/process], infographic style, clean layout, [brand color] accent color, icons and geometric shapes, white background, professional, no text no letters no words, 2.35:1 aspect ratio, leave space for title overlay`
 
 ### Cover Technical Specs
 - Aspect ratio: **2.35:1** (WeChat requirement)

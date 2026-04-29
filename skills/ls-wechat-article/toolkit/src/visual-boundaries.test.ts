@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -8,10 +8,123 @@ import { previewHtml } from './converter.js';
 import { buildCoverImagePrompt, buildInlineImagePrompt } from './image-style-system.js';
 import { calculateAspectCrop, needsAspectNormalization } from './image-gen.js';
 import {
+  DEFAULT_VISUALS,
+  loadClientVisuals,
+  loadVisualPromptSystem,
+  migrateClientVisuals,
+  migrateClientStyleFileInPlace,
+} from './visual-prompt-system.js';
+import {
   illustrateMarkdown,
   injectImagesAtResolvedTargets,
   resolveIllustrationTargets,
+  stripGeneratedInlineImagesFromLines,
 } from './illustration-workflow.js';
+
+test('visual prompt system is loaded from Markdown configuration', () => {
+  const system = loadVisualPromptSystem();
+
+  assert.equal(system.defaults.cover.type, 'typography');
+  assert.equal(system.defaults.cover.text_level, 'title-only');
+  assert.equal(system.defaults.inline.density, 'balanced');
+  assert.equal(system.defaults.inline.type_default, 'auto');
+  assert.ok(system.styles.some(style => style.key === 'multi-panel-manga'));
+  assert.ok(system.cover_types.some(type => type.key === 'typography'));
+  assert.ok(system.inline_types.some(type => type.key === 'framework'));
+  assert.match(system.global.negative_prompt, /低分辨率/);
+});
+
+test('migrateClientVisuals removes legacy image fields and creates visuals defaults', () => {
+  const migrated = migrateClientVisuals({
+    name: 'Demo',
+    cover_style: 'multi-panel-manga 多格漫画风',
+    image_system: {
+      defaults: {
+        cover_style: 'multi-panel-manga',
+        inline_style: 'blueprint',
+        cover_type: 'conceptual',
+      },
+    },
+  });
+
+  assert.equal(migrated.visuals.style, 'multi-panel-manga');
+  assert.equal(migrated.visuals.cover.type, 'typography');
+  assert.equal(migrated.visuals.cover.text_level, 'title-only');
+  assert.equal(migrated.visuals.inline.density, 'balanced');
+  assert.equal(migrated.visuals.inline.type_default, 'auto');
+  assert.equal('cover_style' in migrated, false);
+  assert.equal('image_system' in migrated, false);
+});
+
+test('migrateClientVisuals initializes visuals when missing', () => {
+  const migrated = migrateClientVisuals({ name: 'Demo' });
+
+  assert.deepEqual(migrated.visuals, DEFAULT_VISUALS);
+});
+
+test('migrateClientStyleFileInPlace removes legacy visual fields from style.yaml', () => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'ls-wechat-visuals-'));
+  const originalCwd = process.cwd();
+  const styleDir = join(tempDir, '.ls-wechat-article', 'clients', 'demo');
+  const stylePath = join(styleDir, 'style.yaml');
+  mkdirSync(styleDir, { recursive: true });
+  writeFileSync(
+    stylePath,
+    [
+      'name: Demo',
+      'cover_style: "blueprint 技术蓝图风"',
+      'image_system:',
+      '  defaults:',
+      '    cover_style: "blueprint"',
+      '',
+    ].join('\n'),
+    'utf-8',
+  );
+
+  try {
+    process.chdir(tempDir);
+    assert.equal(migrateClientStyleFileInPlace('demo'), true);
+    const migrated = readFileSync(stylePath, 'utf-8');
+    assert.match(migrated, /visuals:/);
+    assert.match(migrated, /# 配图范围。/);
+    assert.match(migrated, /# 可选值：cover\+inline, cover-only, inline-only, none/);
+    assert.match(migrated, /# 主视觉风格。/);
+    assert.match(migrated, /# 可选值：follow article tone, editorial, blueprint, notion, warm, watercolor, scientific, lofi-doodle, multi-panel-manga, notebook-sketch, claymation/);
+    assert.match(migrated, /# 正文插图默认类型。/);
+    assert.match(migrated, /# 可选值：auto, infographic, scene, flowchart, comparison, framework, timeline/);
+    assert.match(migrated, /style: blueprint/);
+    assert.doesNotMatch(migrated, /cover_style:/);
+    assert.doesNotMatch(migrated, /image_system:/);
+  } finally {
+    process.chdir(originalCwd);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('loadClientVisuals does not initialize style.yaml when visuals is missing', () => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'ls-wechat-first-visuals-'));
+  const originalCwd = process.cwd();
+  const styleDir = join(tempDir, '.ls-wechat-article', 'clients', 'demo');
+  const stylePath = join(styleDir, 'style.yaml');
+  const originalStyle = [
+    'name: Demo',
+    'theme: wechat-tech',
+    '',
+  ].join('\n');
+  mkdirSync(styleDir, { recursive: true });
+  writeFileSync(stylePath, originalStyle, 'utf-8');
+
+  try {
+    process.chdir(tempDir);
+    const visuals = loadClientVisuals('demo');
+    const currentStyle = readFileSync(stylePath, 'utf-8');
+    assert.deepEqual(visuals, DEFAULT_VISUALS);
+    assert.equal(currentStyle, originalStyle);
+  } finally {
+    process.chdir(originalCwd);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
 
 test('buildCoverImagePrompt requires an explicit cover type', () => {
   assert.throws(
@@ -211,6 +324,33 @@ test('injectImagesAtResolvedTargets inserts paragraph-targeted images after the 
     markdown,
     /Hermes 最值钱的一点，是它会把失败记录也写回 Skill。\n这意味着经验不是静态模板，而是会被修补的资产。\n\n!\[Hermes 技能闭环\]\(assets\/inline-01\.png\)\n\n再往后，Skill 会随着使用不断被修正。\n/s,
   );
+});
+
+test('stripGeneratedInlineImagesFromLines removes previous generated inline images before rerun', () => {
+  const lines = [
+    '# OpenClaw 企业 Agent 路径',
+    '',
+    '## 你以为是模型不够聪明，其实是脚手架太薄',
+    '模型是引擎。Harness 是底盘。',
+    '',
+    '![旧图](assets/inline-01.png)',
+    '',
+    '![旧图重复](assets/inline-01.png)',
+    '',
+    '## 靠人喂 vs 自己长',
+    '这不是功能差异，是设计哲学的分野。',
+    '',
+    '![旧图二](assets/inline-02.png)',
+    '',
+    '![手工配图](assets/manual-diagram.png)',
+    '',
+  ];
+
+  const cleaned = stripGeneratedInlineImagesFromLines(lines);
+
+  assert.equal(cleaned.some(line => line.includes('assets/inline-01.png')), false);
+  assert.equal(cleaned.some(line => line.includes('assets/inline-02.png')), false);
+  assert.equal(cleaned.some(line => line.includes('assets/manual-diagram.png')), true);
 });
 
 test('article images normalize fixed-size outputs back to 16:9', () => {

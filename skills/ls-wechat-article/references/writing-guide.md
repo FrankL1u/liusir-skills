@@ -66,16 +66,18 @@ Avoid:
 - tools without use boundary
 - fake neatness that hides uncertainty
 
-## Step 5 Editing Scope
+## Step 4.5 QA and Optional Revision Scope
 
-### Auto-fix can handle
+Step 4.5 runs Editorial QA after drafting. It reports issues and repair suggestions, but it does not revise the article by default.
+
+### Optional revision can handle
 
 - mechanical AI connectors
 - classroom or report-style transitions
 - generic tool names when a concrete tool already exists in the draft
 - hypothetical examples that need to be downgraded into explicit `未亲测` wording
 
-### Auto-fix must not handle
+### Optional revision must not handle
 
 - inventing first-hand experience
 - inventing data or examples
@@ -88,6 +90,121 @@ Avoid:
 - missing archetype-specific elements
 - weak support or weak counterargument handling
 - lack of warmth, uniqueness, or flow
+
+## Live Voice Phrase Bank and Hard No-Go Zone
+
+This section adapts practical voice rules from Khazix-style public-account writing:
+
+- use conversational phrases to restore human presence
+- avoid template phrases that immediately expose AI-generated prose
+- keep the LS voice professional; do not import another account's slang, profanity, or private persona wholesale
+
+### Recommended Conversational Phrases
+
+Use these only when they fit the paragraph. Do not stuff them into every transition.
+
+**Transitions and pivots**
+
+- `坦率地讲`
+- `说真的`
+- `我是真的觉得`
+- `反正我觉得`
+- `怎么说呢`
+- `其实吧`
+- `回到 {topic} 这块`
+- `{topic} 这块需要注意一下`
+- `顺着上面的判断再往下看`
+
+**Judgment and stance**
+
+- `我有时候觉得`
+- `我一直觉得`
+- `这话听着有点刺耳，但`
+- `我自己的感受是`
+- `我倾向于认为`
+- `我觉得这件事还是挺重要的`
+- `这不是一个漂亮说法，是真实约束`
+
+**Uncertainty and self-limitation**
+
+- `说实话，我也不确定`
+- `我自己也还在摸索`
+- `可能有些想法还不成熟`
+- `这个事我也踩过坑`
+- `我说“理论上”，是因为我自己还没完全跑通`
+- `说实话，我们还差得远`
+
+**Reader proximity**
+
+- `很多朋友可能不知道`
+- `可能有人会纳闷`
+- `如果你关注这个领域`
+- `大家可能也见过类似情况`
+- `这里先别急着下结论`
+
+These phrases are not decorative fillers. Use them when they do one of four jobs:
+
+- lower the distance between author and reader
+- mark real uncertainty
+- make a technical judgment less report-like
+- return to the article's main thread after a side example
+
+### Absolute No-Go Zone
+
+Avoid these patterns unless they appear inside a direct quote that must remain unchanged.
+
+**Cliches and guided transitions**
+
+- `首先...其次...最后`
+- `综上所述`
+- `值得注意的是`
+- `不难发现`
+- `让我们来看看`
+- `接下来让我们`
+- `本文将`
+
+**Over-structured article shape**
+
+- Do not turn every point into a bullet list.
+- Do not use heavy bold text as a substitute for writing.
+- Do not use a heading for every single paragraph.
+- Do not use template H2 titles such as `背景`, `现状`, `挑战`, `机遇`, `未来展望`.
+- For WeChat readability, LS articles may still use `2-5` H2 anchors when the article shape needs them. Each H2 must cover at least two paragraphs and should sound like a natural turn, not a report label.
+
+**Punctuation and formatting traps**
+
+- Avoid full-width colon `：` as a repeated explanation marker.
+- Avoid em dash `——` as a default dramatic pause.
+- Avoid quotation marks for fake emphasis. Use `「」` only when quoting a phrase or named concept clearly.
+- Avoid `**Label:** explanation` formatting. If emphasis is needed, bold the actual judgment sentence.
+
+**High-risk AI phrases**
+
+- `说白了`
+- `这意味着什么`
+- `这意味着`
+- `本质上`
+- `换句话说`
+- `不可否认`
+- `毫无疑问`
+- `在当今 AI 快速发展的时代`
+- `随着技术的不断进步`
+
+**Fake examples and fake experience**
+
+- Do not write `比如有一次...` unless the user supplied the real experience.
+- Do not invent first-hand usage, screenshots, test results, meetings, or emotional reactions.
+- If there is no real experience, say so directly: `我自己还没完整跑过，只能先按公开资料判断`.
+
+**Generic tool names**
+
+- Do not write `AI 工具`, `某个模型`, or `智能平台` when the article already has concrete names.
+- Use concrete product names such as `Claude Code`, `Codex`, `Cursor`, `MiMo-V2.5`, `Deep Research`, or the exact tool named in the source.
+
+**Textbook openings**
+
+- Do not open with `随着 AI 的发展`, `近年来`, `在数字化时代`, or definition-style explanations.
+- Start from a concrete event, product release, strange detail, user scene, or disagreement with the obvious reading.
 
 ## The Core Problem
 
@@ -201,7 +318,7 @@ Before accepting any "common framing," dismantle it:
    - Topic "职场内卷": 不舒服的真相不是"老板压榨你"，而是"你参与内卷是因为你也怕别人比你强"
    - Topic "知识付费": 不舒服的真相不是"课程是骗人的"，而是"你知道学了没用但买课的那一刻你觉得自己在进步"
 
-### The Depth Checklist (MANDATORY Before Step 5)
+### The Depth Checklist (MANDATORY Before Step 4.5 QA)
 
 After drafting, answer these. If "no" to 2+, REWRITE — don't polish:
 

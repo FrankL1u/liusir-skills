@@ -6,12 +6,12 @@ Universal WeChat Official Account workflow skill. It can draft articles, format 
 
 | You say | The skill does |
 |---------|----------------|
-| `Write a WeChat article for demo` | Runs the full workflow: topic -> framework + archetype -> draft -> editorial QA -> images -> theme -> draft publish |
-| `Publish this Markdown to WeChat drafts` | Skips drafting. If you did not forbid edits, it still runs shallow editorial QA before publish |
+| `Write a WeChat article for demo` | Runs the full workflow: topic -> framework + archetype -> title + draft -> editorial QA -> cover/inline images -> theme -> draft publish |
+| `Publish this Markdown to WeChat drafts` | Skips drafting. If you did not forbid content changes, it still runs diagnostic editorial QA before publish |
 | `Preview this article with latepost-depth` | Generates a local HTML preview |
-| `Show the last 7 days of article performance` | Fetches WeChat datacube stats and backfills `history.yaml` |
-| `Learn from my edits on this article` | Compares draft vs final and writes lessons |
-| `Import reference articles and refresh the playbook` | Reads `corpus/` and outputs playbook analysis inputs |
+| `Show the last 7 days of article performance` | Fetches WeChat stats and summarizes recent performance |
+| `Learn from my edits on this article` | Compares draft vs final and extracts writing preferences |
+| `Import reference articles and refresh writing preferences` | Analyzes reference articles and updates account writing habits |
 
 ## Installation
 
@@ -23,12 +23,6 @@ pip install -r requirements.txt
 mkdir -p .ls-wechat-article
 cp config.example.yaml .ls-wechat-article/config.yaml
 ```
-
-Runtime data is resolved in this order:
-
-1. `./.ls-wechat-article/`
-2. `~/.liusir-skills/ls-wechat-article/`
-3. legacy skill-local files as a read-only fallback
 
 Recommended validation:
 
@@ -83,9 +77,8 @@ trendradar:
 
 Notes:
 - TrendRadar is not required for drafting, formatting, preview, or publish.
-- When enabled, Step 2 uses `scripts/fetch_trendradar_hotspots.py` to merge TrendRadar news from the last 1 day with RSS items from the last 1 day.
-- The script emits one normalized JSON payload for downstream topic selection.
-- If TrendRadar is unavailable, the skill falls back to `scripts/fetch_hotspots.py`.
+- When enabled, Step 2 merges TrendRadar news from the last 1 day with RSS items from the last 1 day.
+- If TrendRadar is unavailable, the skill falls back to the general hotspot source.
 - Before drafting a new article, the workflow should first search for the latest related information. This applies to writing flows, not to format-only or publish-only flows.
 
 ## Workflow Tutorial
@@ -98,11 +91,12 @@ Notes:
 | Step 2 | If no concrete topic is given, fetch topical signals |
 | Step 3 | Pick the article angle |
 | Step 3.5 | Pick the framework, article archetype, and output shape |
-| Step 4 | Search the latest related information, then draft with archetype-bound writing rules |
-| Step 5 | Run `5A auto-fix` and `5B editorial QA` |
-| Step 6 | Decide image scope, image style, inline image density, then convert that into explicit cover and inline targets |
-| Step 7 | Decide theme, generate HTML, preview or publish to drafts |
-| Step 8 | Update `history.yaml`, backfill stats, learn edits, refresh playbook |
+| Step 4 | Search the latest related information, generate and score title candidates, select the H1, then draft with archetype-bound writing rules |
+| Step 4.5 | Run editorial QA and report repair suggestions |
+| Step 5 | Generate the cover image from the account's visual preferences |
+| Step 5.5 | Plan explicit inline targets, then generate inline images |
+| Step 6 | Decide theme, generate HTML, preview or publish to drafts |
+| Step 7 | Review performance, learn from edits, and update account writing preferences |
 
 ### 2. Style Guide
 
@@ -113,11 +107,18 @@ This skill handles two kinds of style:
 
 #### Image setup
 
-| What you decide | Options | Meaning |
-|-----------------|---------|---------|
-| Image scope | `cover + inline images` / `cover only` / `inline only` / `no images` | Whether to generate a cover, inline images, both, or none |
-| Image style | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | Shared visual direction for the article's images |
-| Inline image density | `minimal` / `balanced` / `per-section` / `custom` | Agent planning input for how many inline targets to prepare |
+The first time image generation is needed, the workflow asks for image scope, overall style, palette, cover direction, and inline image density. The user may skip any choice; skipped choices use defaults. Later runs follow the account preference unless the user changes it for the current article.
+
+| What to decide | Options | Default | Meaning |
+|----------------|---------|---------|---------|
+| Image scope | cover + inline / cover only / inline only / no images | cover + inline | Whether this article needs images |
+| Overall image style | follow article tone, editorial infographic, technical blueprint, minimal sketch, warm friendly, watercolor, scientific diagram, multi-panel manga, notebook sketch, claymation, and more | follow article tone | Shared visual direction for cover and inline images |
+| Palette | follow style, macaron, black-and-white ink, neon, warm | follow style | Overall color mood |
+| Cover direction | hero visual, conceptual, title-led, metaphor, scene, minimal | title-led | How the cover makes its first impression |
+| Cover intensity | subtle, balanced, bold | balanced | Visual impact level |
+| Cover text | no text, title only, title + subtitle, text-rich | title only | How much text appears on the cover |
+| Inline image density | minimal, balanced, per-section, rich, none | balanced | Default usually generates 3-5 inline images |
+| Inline image type | auto, infographic, scene, flowchart, comparison, framework, timeline | auto | Auto means the workflow chooses the best type for each target paragraph |
 
 #### Image styles
 
@@ -135,6 +136,27 @@ This skill handles two kinds of style:
 | `notebook-sketch` | Notebook concept sketch style | System sketches, abstract concepts |
 | `claymation` | Clay / stop-motion toy style | Friendly educational content |
 
+#### Palettes
+
+| Palette key | Meaning | Best for |
+|-------------|---------|----------|
+| `default` | Follow the selected style's default palette | General use |
+| `macaron` | Soft pastel color blocks | Friendly and light educational content |
+| `mono-ink` | Black-and-white ink lines | Sketches, manga, structural explanation |
+| `neon` | Dark high-saturation neon | AI, tools, future-facing technology |
+| `warm` | Warm reading-friendly colors | Narrative, opinion, and personal experience articles |
+
+#### Cover types
+
+| Type key | Meaning | Best for |
+|----------|---------|----------|
+| `hero` | One dominant focal subject | Strong first-glance impact |
+| `conceptual` | Abstract visual system | Explaining a core concept |
+| `typography` | Title-led poster composition | Default cover, title-first articles |
+| `metaphor` | Concrete symbolic object or structure | Argument-driven pieces |
+| `scene` | Work, life, or narrative scene | Tone-setting covers |
+| `minimal` | Single focal element and whitespace | Quiet, restrained covers |
+
 #### Inline image density
 
 | Option | Meaning |
@@ -142,7 +164,20 @@ This skill handles two kinds of style:
 | `minimal` | A few key images, usually `1-2` |
 | `balanced` | Standard density, usually `3-5` |
 | `per-section` | Try to illustrate each strong section |
-| `custom` | User specifies the number |
+| `rich` | Cover more high-value visual positions in long articles |
+| `none` | Do not generate inline images |
+
+#### Inline image types
+
+| Type key | Meaning |
+|----------|---------|
+| `auto` | Agent chooses one explicit type for each inline target |
+| `infographic` | Modular information graphic with numbers and hierarchy |
+| `scene` | A readable visual scene based on the paragraph |
+| `flowchart` | Steps, arrows, sequence, and transitions |
+| `comparison` | Before/after, option comparison, or tradeoff layout |
+| `framework` | Modules, layers, and system relationships |
+| `timeline` | Stages, milestones, or evolution over time |
 
 #### Layout themes
 
@@ -155,22 +190,45 @@ This skill handles two kinds of style:
 | `latepost-depth` | Strong hierarchy, trend and judgment articles |
 | `guardian` | Media-style commentary |
 | `wechat-ft` | Business long-form essays |
+| `wechat-nyt` | Long-form reporting and feature writing |
 | `wechat-deepread` | Dense long reading |
 | `nikkei` | Technical and business analysis |
 | `lemonde` | Deep reported reading tone |
+| `wechat-elegant` | Personal essays and softer creator writing |
+| `kenya-emptiness` | Strong whitespace and experimental tone |
+| `hische-editorial` | Illustration-heavy editorial identity |
+| `ando-concrete` | Cool, architectural, highly ordered layouts |
+| `gaudi-organic` | Organic curves and creative expression |
+| `wechat-jonyive` | Minimal product and design writing |
+| `wechat-apple` | Apple-like product launches and product analysis |
 
 If the user does not specify a theme, the workflow should either ask for one or explicitly tell the user which theme will be used.
+
+#### Title generation rules
+
+Before drafting the body in Step 4, the workflow generates and scores title candidates, then writes the selected title into the article.
+
+The title is not a summary; it is a reason to click. Each candidate should use at least one motivation:
+
+- clear point of view
+- curiosity question
+- cognitive contrast
+- suspense gap
+- pain point or benefit
+
+Step 4.5 checks title length, core keyword position, whether the body delivers the title promise, and whether the digest avoids repeating the title.
 
 ### 3. Usage Modes
 
 | Usage mode | When to use it | Example |
 |------------|----------------|---------|
 | Start from a topic | You have a topic but no draft yet | `Help me write a WeChat article about AI coding` |
-| Start from Markdown | You already have Markdown and need formatting, preview, or publish. By default the skill still runs shallow editorial QA unless you say `publish only` or `do not change content` | `Format this Markdown for WeChat and publish it to drafts` |
+| Start from Markdown | You already have Markdown and need formatting, preview, or publish. By default the skill still runs diagnostic editorial QA unless you say `publish only` or `do not change content` | `Format this Markdown for WeChat and publish it to drafts` |
 | Start from a specific step | You want to enter at a specific workflow step | `Start from --step 3.5 and help me choose a framework` |
-| Decide images first | You want to decide image scope, style, density, and explicit image targets before generation | `Start from --step 6 and let me decide image settings` |
-| Decide theme and publish | You already have the article and only need theme, preview, or publish | `Start from --step 7 and tell me which theme will be used` |
-| Review and learning | You want stats, edit-learning, or playbook refresh | `Start from --step 8 and help me update history, stats, and lessons` |
+| Decide cover first | You want to review cover settings before generation | `Start from --step 5 and show me the cover plan` |
+| Decide inline images first | You want to review explicit inline targets before generation | `Start from --step 5.5 and show me inline image targets` |
+| Decide theme and publish | You already have the article and only need theme, preview, or publish | `Start from --step 6 and tell me which theme will be used` |
+| Review and learning | You want stats, edit-learning, or account writing preference updates | `Start from --step 7 and help me review performance and learn from edits` |
 
 ## Common Commands
 
@@ -191,10 +249,10 @@ node dist/cli.js editorial-qa article.md --client demo
 node dist/cli.js theme-preview article.md
 
 # Inline illustrations
-node dist/cli.js illustrate article.md --client demo --style editorial --target "先定义输入，再定义输出，最后定义回看路径::flowchart" --target "不要把验证留到最后，应该让验证跟执行一起发生::framework" --provider qwen
+node dist/cli.js illustrate article.md --client demo --style editorial --palette default --target "先定义输入，再定义输出，最后定义回看路径::flowchart" --target "不要把验证留到最后，应该让验证跟执行一起发生::framework" --provider qwen
 
 # Cover generation
-node dist/cli.js cover article.md --client demo --style blueprint --type conceptual --provider openai
+node dist/cli.js cover article.md --client demo --style blueprint --palette default --type typography --text-level title-only --provider openai
 
 # Stats backfill
 node dist/fetch-stats.js --client demo --days 7
@@ -206,47 +264,23 @@ node dist/learn-edits.js --client demo --draft draft.md --final final.md
 node dist/build-playbook.js --client demo
 ```
 
-If `--cover` is omitted during publish, the tool will try to use the first image in the article as the draft cover.
-`editorial-qa` writes `quality-report.md` into the article bundle and keeps Step 5 output explicit instead of hiding quality judgment inside the agent response.
-`illustrate` writes article output to `{runtime_root}/output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`. The toolkit no longer chooses positions or image types on its own; pass explicit `--target` entries from the agent. Prefer paragraph/content-block anchors; heading targets remain supported as a fallback for backward compatibility.
-
-The shared image style library lives in [references/image-system.yaml](./references/image-system.yaml). Runtime client data lives under `{runtime_root}/clients/{client}/style.yaml` and only stores default theme, writing profile, and client-specific overrides.
+The HTML preview automatically renders `cover.png` / `cover.jpg` / `cover.jpeg` / `cover.webp` from the article directory at the top of the page. Publishing to WeChat drafts does not insert that cover image into the article body.
+To use the Step 5 cover during publish, pass it explicitly with `--cover cover.png`. If `--cover` is omitted, the tool will try to use the first image in the article as the draft cover.
+`editorial-qa` returns quality findings and repair suggestions so Step 4.5 remains reviewable.
+`illustrate` expects the workflow to choose inline image positions and image types before generation.
 
 ## Continuous Learning
 
 This loop has three parts:
 
-1. Feed corpus  
-   Put representative historical articles, strong external reference pieces, and structure notes into `{runtime_root}/clients/{client}/corpus/`, then run `build-playbook`.
+1. Feed reference articles
+   Provide representative historical articles, strong external reference pieces, and structure notes.
 
 2. Learn from edits  
-   After manual revisions, run `learn-edits` to write draft-vs-final differences into `lessons/`.
+   After manual revisions, the workflow can compare before/after changes and summarize your preferences.
 
-3. Refresh playbook  
-   When `corpus/` is rich enough, or after about 5 new lessons, run `build-playbook` again and refresh `playbook.md`.
-
-## Directory Structure
-
-```text
-{runtime_root}/clients/demo/
-├── style.yaml
-├── history.yaml
-├── playbook.md
-├── corpus/
-├── lessons/
-└── themes/
-```
-
-See [style-template.md](./references/style-template.md) for the client template. Publish records go to `{runtime_root}/clients/{client}/history.yaml`, edit learning goes to `{runtime_root}/clients/{client}/lessons/`, and `corpus/` acts as the reference article directory for future playbook refresh.
-
-## Related Files
-
-- [agents/openai.yaml](./agents/openai.yaml)
-- [scripts/validate_skill.py](./scripts/validate_skill.py)
-- [toolkit/src/image-gen.ts](./toolkit/src/image-gen.ts)
-- [toolkit/src/fetch-stats.ts](./toolkit/src/fetch-stats.ts)
-- [toolkit/src/build-playbook.ts](./toolkit/src/build-playbook.ts)
-- [toolkit/src/learn-edits.ts](./toolkit/src/learn-edits.ts)
+3. Update writing preferences
+   Once enough references and edits accumulate, the workflow updates the account preferences used for future articles.
 
 ## License
 

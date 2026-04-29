@@ -1,6 +1,6 @@
 # 图片风格配置表
 
-这份配置表对应仓库级公共图片风格系统，机器可读配置位于 `references/image-system.yaml`。
+这份配置表对应仓库级公共图片风格系统，机器可读配置位于 `references/visual-prompt-system.md`。
 
 全局主体约束：
 
@@ -62,17 +62,14 @@
 
 ### 默认封面风格
 
-- 默认风格：`editorial`
-- 默认封面类型：`conceptual`
+- 默认风格：`follow article tone`
+- 默认封面类型：`typography`
+- 默认文字层级：`title-only`
 
 ### 默认正文图风格
 
-- 默认风格：`editorial`
-- 默认正文图类型映射：
-  - 趋势判断：`framework`
-  - 方法论框架：`framework`
-  - 工具评测：`comparison`
-  - 个人叙事：`scene`
+- 默认正文图密度：`balanced`（3-5 张）
+- 默认正文图类型：`auto`，由 agent 根据正文内容转换成明确的 `inline_type`
 
 ## 后续实现建议
 

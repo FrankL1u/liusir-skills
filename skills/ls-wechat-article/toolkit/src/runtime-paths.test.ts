@@ -18,7 +18,30 @@ test('resolveRuntimeRoot prefers project-local runtime data when it exists', () 
   const projectRoot = getProjectRuntimeRoot(workspace);
   mkdirSync(projectRoot, { recursive: true });
 
-  const resolved = resolveRuntimeRoot({ cwd: workspace, homeDir: join(workspace, 'home') });
+  const resolved = resolveRuntimeRoot({
+    cwd: join(workspace, 'toolkit'),
+    homeDir: join(workspace, 'home'),
+    legacyRoot: workspace,
+  });
+  assert.equal(resolved, projectRoot);
+
+  rmSync(workspace, { recursive: true, force: true });
+});
+
+test('resolveRuntimeRoot uses the skill root as project runtime even when commands run from toolkit', () => {
+  const workspace = mkdtempSync(join(tmpdir(), 'ls-wechat-runtime-'));
+  const skillRoot = join(workspace, 'skills', 'ls-wechat-article');
+  const toolkitCwd = join(skillRoot, 'toolkit');
+  const projectRoot = getProjectRuntimeRoot(skillRoot);
+  mkdirSync(projectRoot, { recursive: true });
+  mkdirSync(toolkitCwd, { recursive: true });
+
+  const resolved = resolveRuntimeRoot({
+    cwd: toolkitCwd,
+    homeDir: join(workspace, 'home'),
+    legacyRoot: skillRoot,
+  });
+
   assert.equal(resolved, projectRoot);
 
   rmSync(workspace, { recursive: true, force: true });
@@ -30,7 +53,11 @@ test('resolveRuntimeRoot falls back to user-level runtime data when project-loca
   const userRoot = getUserRuntimeRoot(homeDir);
   mkdirSync(userRoot, { recursive: true });
 
-  const resolved = resolveRuntimeRoot({ cwd: workspace, homeDir });
+  const resolved = resolveRuntimeRoot({
+    cwd: join(workspace, 'project', 'toolkit'),
+    homeDir,
+    legacyRoot: join(workspace, 'project'),
+  });
   assert.equal(resolved, userRoot);
 
   rmSync(workspace, { recursive: true, force: true });
@@ -39,8 +66,9 @@ test('resolveRuntimeRoot falls back to user-level runtime data when project-loca
 test('resolveRuntimeWritePath creates a project-local runtime root when none exists', () => {
   const workspace = mkdtempSync(join(tmpdir(), 'ls-wechat-runtime-'));
   const target = resolveRuntimeWritePath(['clients', 'demo', 'history.yaml'], {
-    cwd: workspace,
+    cwd: join(workspace, 'toolkit'),
     homeDir: join(workspace, 'home'),
+    legacyRoot: workspace,
   });
 
   assert.equal(target, join(workspace, '.ls-wechat-article', 'clients', 'demo', 'history.yaml'));
@@ -82,6 +110,7 @@ test('inferClientFromRuntimeArticlePath recognizes articles stored under runtime
   const client = inferClientFromRuntimeArticlePath(articlePath, {
     cwd: workspace,
     homeDir: join(workspace, 'home'),
+    legacyRoot: workspace,
   });
 
   assert.equal(client, 'demo');
@@ -104,7 +133,9 @@ test('inferClientFromRuntimeArticlePath tolerates /var and /private/var aliases 
 
   try {
     process.chdir(workspace);
-    const client = inferClientFromRuntimeArticlePath(articlePath);
+    const client = inferClientFromRuntimeArticlePath(articlePath, {
+      legacyRoot: workspace,
+    });
     assert.equal(client, 'demo');
   } finally {
     process.chdir(originalCwd);

@@ -33,53 +33,229 @@ The algorithm determines how far your article travels beyond your subscriber bas
 
 ## Title Optimization
 
-Title accounts for approximately **70% of article success**. Users decide within 3 seconds.
+Title accounts for approximately **70% of article success**. Users decide within 1-2 seconds.
+
+### Core Principle
+
+标题不是文章摘要，而是点击理由。
+
+每个标题必须回答一个问题：
+
+> 读者为什么要在 1-2 秒内点开这篇文章？
+
+Do not write a title that only summarizes the topic. A usable WeChat title must trigger at least one reader motivation:
+
+- 这和我有关
+- 我想知道答案
+- 这个观点和我想的不一样
+- 这里藏了关键信息
+- 点进去我能得到东西
 
 ### Hard Constraints
 - **Length:** 20-28 Chinese characters. Titles truncate in notification pushes and reshares around character 25.
 - **Core keyword:** Must appear in the **first half** of the title (first 12-14 characters).
+- **Promise match:** The article body must deliver what the title promises.
+- **Digest separation:** The digest must not repeat the title.
+- **No cheap bait:** Avoid low-trust words such as `震惊`, `必看`, `速看`, `太炸了`, unless the client voice explicitly allows them and the article can justify the tone.
 
-### 5 Title Strategies
+### Five Title Motivation Types
 
-**1. Number + Specificity:**
-> "5年产品经理总结的3个反直觉认知" / "我面试了200个人之后发现的真相"
-Data: Number-based titles show ~27% higher CTR than suspense-type titles.
+#### 1. 观点鲜明型
 
-**2. Information Gap:**
-> "90%的人不知道的简历潜规则" / "被忽略的GPT用法，比写代码更值钱"
-Creates curiosity through implied exclusivity.
+Use when the article is a judgment piece, trend interpretation, industry analysis, or opinion-driven essay.
 
-**3. Counterintuitive:**
-> "别再学Python了" / "真正决定收入的不是能力，是这件小事"
-Challenges the reader's existing belief. High CTR but must deliver on the promise.
+Formula patterns:
 
-**4. Pain-Point Direct:**
-> "为什么你的PPT总是被打回" / "月薪5000和50000的人，差距在周末"
-Names the problem the reader is experiencing.
+```text
+[对象/现象]，真正重要的不是 A，而是 B
+[人群/行业]最该警惕的，不是 A，而是 B
+[热点]之后，真正的门槛变成了 B
+```
 
-**5. Identity Trigger:**
-> "30岁还在纠结要不要考研的人" / "给所有被领导PUA过的打工人"
-Reader self-identifies and feels personally addressed.
+Examples:
+
+```text
+企业 Agent 真正缺的不是大模型，是底盘
+OpenClaw 火了，但企业 Agent 缺的不是模型
+Agent 落地最难的，不是智能，而是执行系统
+```
+
+Risk:
+
+- The title becomes a slogan if the body does not prove the claim.
+- Avoid abstract nouns stacked together without a concrete object.
+
+#### 2. 好奇疑问型
+
+Use when the article explains a phenomenon, unpacks a confusing signal, or answers a practical question.
+
+Formula patterns:
+
+```text
+为什么 [常见现象] 会 [反常结果]？
+[大家都在做的事]，到底是机会还是坑？
+[热点] 之后，下一道坎是什么？
+```
+
+Examples:
+
+```text
+为什么 OpenClaw 火了，企业反而更难落地 Agent？
+为什么模型越来越强，Agent 还是跑不进企业？
+OpenClaw 之后，企业 Agent 的下一道坎是什么？
+```
+
+Risk:
+
+- Do not ask a question the body cannot answer.
+- Avoid empty curiosity, such as `你知道吗` without a specific tension.
+
+#### 3. 认知反差型
+
+Use when the article has a counterintuitive insight, challenges the default industry narrative, or reframes a familiar topic.
+
+Formula patterns:
+
+```text
+越 [常见追求]，越容易 [反效果]
+看似 A 的 [对象]，真正靠的是 B
+[大家以为的答案]，反而暴露了 [真实问题]
+```
+
+Examples:
+
+```text
+越强的模型，越暴露企业 Agent 的短板
+OpenClaw 越火，越说明 Agent 还没真正成熟
+Agent 真正的差距，不在模型，而在谁能长记性
+```
+
+Risk:
+
+- The contrast must be real. Do not manufacture contradiction for clicks.
+- The opening must quickly show why the reversal is defensible.
+
+#### 4. 悬念缺口型
+
+Use when the article begins from a case, event, experiment, or personal observation and withholds the key lesson.
+
+Formula patterns:
+
+```text
+[事件/结果]之后，我发现了一个更关键的问题
+[具体动作]前，最好先弄清这件事
+[热点]让大家兴奋，但真正的问题才刚开始
+```
+
+Examples:
+
+```text
+OpenClaw 爆火之后，真正的问题才刚开始
+Karpathy 点赞 OpenClaw 后，我反而看到一个隐患
+企业上 Agent 前，最好先看懂 OpenClaw 的短板
+```
+
+Risk:
+
+- The hidden information must be specific and worth revealing.
+- Do not hide the entire topic; readers still need to know what field the article is about.
+
+#### 5. 痛点利益型
+
+Use when the article is a method, tool guide, operational playbook, troubleshooting piece, or decision guide.
+
+Formula patterns:
+
+```text
+[人群]不用再 [痛点]，用 [方法] 解决 [结果]
+从 [起点] 到 [结果]，一篇讲清 [方法]
+[人群]别急着 [动作]，先补齐 [关键能力]
+```
+
+Examples:
+
+```text
+企业做 Agent，不用先堆模型，先补这层底盘
+想让 Agent 真正干活，先解决这 3 个问题
+企业别急着上 Agent，先补齐执行系统
+```
+
+Risk:
+
+- If the title promises a method, the article must contain an actual method.
+- Avoid fake utility, such as `一文讲清` when the piece is only a viewpoint essay.
+
+### Step 4 Title Generation Protocol
+
+Before drafting the article body, generate and select the H1 title.
+
+Required process:
+
+1. Extract the article's core claim in one sentence.
+2. Identify the target reader and the reader's likely concern.
+3. Select 2-3 title motivation types from the five above.
+4. Generate at least 5 title candidates.
+5. Label each candidate with its motivation type.
+6. Count title length and check whether the core keyword appears in the first half.
+7. Score each candidate using the rubric below.
+8. Pick one title as the H1 before drafting the body.
+9. Draft the body around the chosen title's promise.
+
+The title candidate table should use this shape:
+
+| Candidate | Type | Length | Core keyword position | Score | Risk |
+|-----------|------|--------|-----------------------|-------|------|
+| ... | 观点鲜明 | 24 | 前 10 字 | 22/25 | 需要正文证明 B |
+
+### Title Scoring Rubric
+
+Score each candidate from 1-5 on each dimension:
+
+| Dimension | 5 means | 1 means |
+|-----------|---------|---------|
+| 点击动机清晰度 | One clear reason to click is obvious | Reads like a neutral summary |
+| 核心关键词前置 | Main keyword appears naturally in the first half | Main keyword is missing or buried |
+| 具体性 | Names a concrete object, problem, result, or contrast | Uses broad terms like `趋势`, `机会`, `未来` only |
+| 正文兑现度 | Body can fully deliver the promise | Promise is bigger than the article |
+| 微信传播感 | Sounds native to WeChat feeds without being cheap | Sounds academic, vague, or like ad copy |
+
+Selection rule:
+
+- Prefer the highest total score only if the risk is manageable.
+- If two candidates tie, choose the one that best matches the article's core claim.
+- Do not choose a title whose promise requires facts, cases, or methods the article does not contain.
+
+### Title QA Checklist
+
+Use this checklist in Step 4.5:
+
+- Does the title create a click reason, not just summarize the article?
+- Which of the five motivation types does it use?
+- Is the core keyword in the first half?
+- Is the title 20-28 Chinese characters when possible?
+- Does the article body deliver the title's promise?
+- Does the digest add a new hook instead of repeating the title?
+- Is the title cheap bait, exaggerated, or unsupported?
+- Would a target reader immediately know why this article matters to them?
 
 ### Title Craft Details
 
-**Strategic punctuation in titles:**
+Strategic punctuation in titles:
 - `!` — urgency/emphasis (use sparingly, max 1)
 - `?` — curiosity/doubt (strong for engagement)
 - `......` — unfinished thought, suspense
 - `「」` — highlight a key term within the title
 - `,` — create a two-part structure with contrast
 
-**Always generate 3 title alternatives** with different strategies. Score each on:
-1. Specificity (does it promise something concrete?)
-2. Curiosity gap (does it make you NEED to know?)
-3. Self-identification (does the target reader feel addressed?)
-
 ### Title Anti-Patterns
-- Clickbait that doesn't match content → destroys trust, causes unfollows, tanks completion rate
-- Generic titles without specificity: "采访了无数大学生" is weaker than "采访了3000个大学生"
-- Burying the key point past the 25-character truncation mark
-- Using "震惊！" / "必看！" → flagged by algorithm, feels cheap
+
+- Only summarizing the topic, such as `OpenClaw 企业应用分析`
+- Empty grand narratives, such as `AI Agent 的未来趋势`
+- Cheap bait that the article cannot justify
+- Hiding the core object too late in the title
+- Using generic modifiers without evidence, such as `最强`, `彻底`, `颠覆`, `必看`
+- Overpromising practical value when the article is mainly opinion
+- Repeating the exact same hook in title and digest
 
 ---
 

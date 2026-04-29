@@ -69,6 +69,7 @@ interface CliArgs {
   fallbackCover: boolean;
   color: string;
   mood: string;
+  negativePrompt?: string;
 }
 
 export interface ImageGenResult {
@@ -90,6 +91,7 @@ type GenerateFn = (
   sizeOrRatio: string,
   model?: string,
   baseUrl?: string,
+  negativePrompt?: string,
 ) => Promise<Buffer>;
 
 function getTargetAspectRatio(size: 'cover' | 'article'): number {
@@ -329,6 +331,7 @@ async function generateQwen(
   size: string,
   model = 'qwen-image-2.0-pro',
   baseUrl = 'https://dashscope.aliyuncs.com/api/v1',
+  negativePrompt?: string,
 ): Promise<Buffer> {
   const response = await httpRetry(
     `${baseUrl}/services/aigc/multimodal-generation/generation`,
@@ -352,8 +355,7 @@ async function generateQwen(
           size,
           watermark: false,
           prompt_extend: true,
-          negative_prompt:
-            '低分辨率，低画质，肢体畸形，手指畸形，画面过饱和，蜡像感，人脸无细节，过度光滑，构图混乱，文字模糊，扭曲。',
+          ...(negativePrompt ? { negative_prompt: negativePrompt } : {}),
         },
       }),
     },
@@ -386,7 +388,7 @@ const GENERATORS: Record<string, GenerateFn> = {
   gemini: (prompt, apiKey, sizeOrRatio, model) => generateGemini(prompt, apiKey, sizeOrRatio, model),
   openai: (prompt, apiKey, sizeOrRatio, model, baseUrl) => generateOpenAI(prompt, apiKey, sizeOrRatio, model, baseUrl),
   doubao: (prompt, apiKey, sizeOrRatio, model, baseUrl) => generateDoubao(prompt, apiKey, sizeOrRatio, model, baseUrl),
-  qwen: (prompt, apiKey, sizeOrRatio, model, baseUrl) => generateQwen(prompt, apiKey, sizeOrRatio, model, baseUrl),
+  qwen: (prompt, apiKey, sizeOrRatio, model, baseUrl, negativePrompt) => generateQwen(prompt, apiKey, sizeOrRatio, model, baseUrl, negativePrompt),
 };
 
 function searchNanoBanana(keywords: string, maxResults = 3): NanaBananaPrompt[] {
@@ -548,6 +550,7 @@ async function generateFromArgs(args: CliArgs): Promise<ImageGenResult> {
       sizeValue,
       providerConfig.model,
       providerConfig.base_url,
+      args.negativePrompt,
     );
     writeFileSync(args.output, bytes);
     normalizeGeneratedImageAspect(args.output, args.size);

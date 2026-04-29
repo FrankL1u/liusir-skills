@@ -16,20 +16,53 @@ trendradar:
   timeout_ms: 30000
 
 # Image generation
+# 控制图片生成服务商。这里只管“用哪个模型/接口生成图”，不管文章视觉风格。
 image:
-  default_provider: "" # gemini | openai | doubao | qwen (leave empty to auto-select first configured provider)
+  # 默认图片生成服务商。
+  # 可选值：gemini, openai, doubao, qwen
+  # 留空时：自动选择第一个已配置 api_key 的 provider。
+  default_provider: ""
+
+  # 各图片服务商配置。
   providers:
     gemini:
+      # Gemini / Imagen API Key。为空表示不启用该 provider。
       api_key: ""
+
+      # Gemini 图片模型名。
+      # 常见可选值：imagen-3.0-generate-002
       model: "imagen-3.0-generate-002"
+
     openai:
+      # OpenAI 或兼容 OpenAI 协议服务的 API Key。为空表示不启用该 provider。
       api_key: ""
+
+      # OpenAI 图片模型名。
+      # 常见可选值：gpt-image-1, dall-e-3
       model: "gpt-image-1"
+
+      # 可选。OpenAI 兼容接口地址。
+      # 官方 OpenAI 可留空；第三方兼容服务填写对应 base_url。
+      base_url: ""
+
     doubao:
+      # 火山方舟 API Key。为空表示不启用该 provider。
       api_key: ""
+
+      # 豆包图片模型名。
+      # 常见可选值：doubao-seedream-5-0-260128
       model: "doubao-seedream-5-0-260128"
+
+      # 火山方舟 API 地址。
       base_url: "https://ark.cn-beijing.volces.com/api/v3"
+
     qwen:
+      # 阿里云百炼 / DashScope API Key。为空表示不启用该 provider。
       api_key: ""
+
+      # 通义图片模型名。
+      # 常见可选值：qwen-image-2.0, qwen-image-2.0-pro
       model: "qwen-image-2.0-pro"
+
+      # DashScope API 地址。
       base_url: "https://dashscope.aliyuncs.com/api/v1"

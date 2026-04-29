@@ -126,6 +126,26 @@ function buildPreviewBaseHref(inputPath: string): string {
   return directoryUrl.endsWith('/') ? directoryUrl : `${directoryUrl}/`;
 }
 
+function findPreviewCoverPath(inputPath: string): string | undefined {
+  const mdDir = dirname(resolve(inputPath));
+  const candidates = [
+    join(mdDir, 'cover.png'),
+    join(mdDir, 'cover.jpg'),
+    join(mdDir, 'cover.jpeg'),
+    join(mdDir, 'cover.webp'),
+  ];
+  return candidates.find(candidate => existsSync(candidate));
+}
+
+function toPreviewRelativePath(filePath: string, inputPath: string): string {
+  const rel = pathToFileURL(resolve(filePath)).href;
+  const base = pathToFileURL(dirname(resolve(inputPath))).href;
+  if (rel.startsWith(base.endsWith('/') ? base : `${base}/`)) {
+    return rel.slice((base.endsWith('/') ? base : `${base}/`).length);
+  }
+  return rel;
+}
+
 // --- Commands ---
 
 const program = new Command();
@@ -158,7 +178,9 @@ program
     });
 
     const result = converter.convertFile(input);
-    const fullHtml = previewHtml(result.html, converter.getTheme(), buildPreviewBaseHref(input));
+    const previewCoverPath = findPreviewCoverPath(input);
+    const previewCoverSrc = previewCoverPath ? toPreviewRelativePath(previewCoverPath, input) : undefined;
+    const fullHtml = previewHtml(result.html, converter.getTheme(), buildPreviewBaseHref(input), previewCoverSrc);
 
     const outputPath = opts.output || input.replace(/\.md$/, '.html');
     writeFileSync(outputPath, fullHtml, 'utf-8');
@@ -311,7 +333,12 @@ program
   .option('--client <name>', 'Client/output namespace', 'default')
   .option('--provider <name>', 'Image provider: gemini, openai, doubao, qwen')
   .option('--style <text>', 'Cover style direction or configured style key', 'follow article tone')
+  .option('--palette <key>', 'Palette key from visual-prompt-system.md', 'default')
   .requiredOption('--type <key>', 'Explicit cover type: hero, conceptual, typography, metaphor, scene, minimal')
+  .option('--mood <key>', 'Cover mood key')
+  .option('--cover-font <key>', 'Cover font key')
+  .option('--text-level <key>', 'Cover text level key')
+  .option('--aspect <ratio>', 'Cover aspect ratio')
   .option('--color <hex>', 'Accent color used in prompts', DEFAULT_COLOR)
   .action(async (input: string, opts) => {
     const result = await generateArticleCover({
@@ -320,7 +347,12 @@ program
       client: opts.client,
       provider: opts.provider,
       style: opts.style,
+      palette: opts.palette,
       type: opts.type,
+      mood: opts.mood,
+      font: opts.coverFont,
+      textLevel: opts.textLevel,
+      aspect: opts.aspect,
       color: opts.color,
     });
 
@@ -338,6 +370,7 @@ program
   .option('--client <name>', 'Client/output namespace', 'default')
   .option('--provider <name>', 'Image provider: gemini, openai, doubao, qwen')
   .option('--style <text>', 'Image style direction', 'follow article tone')
+  .option('--palette <key>', 'Palette key from visual-prompt-system.md', 'default')
   .requiredOption('--target <spec...>', 'Explicit inline targets in the form "<position anchor>::<inlineType>"')
   .option('--color <hex>', 'Accent color used in prompts', DEFAULT_COLOR)
   .action(async (input: string, opts) => {
@@ -347,6 +380,7 @@ program
       client: opts.client,
       provider: opts.provider,
       style: opts.style,
+      palette: opts.palette,
       color: opts.color,
       targets: parseIllustrationTargets(opts.target as string[]),
     });
@@ -454,7 +488,9 @@ program
       });
 
       const result = converter.convertFile(input);
-      const fullHtml = previewHtml(result.html, converter.getTheme(), buildPreviewBaseHref(input));
+      const previewCoverPath = findPreviewCoverPath(input);
+      const previewCoverSrc = previewCoverPath ? toPreviewRelativePath(previewCoverPath, input) : undefined;
+      const fullHtml = previewHtml(result.html, converter.getTheme(), buildPreviewBaseHref(input), previewCoverSrc);
 
       const outputPath = input.replace(/\.md$/, `.${t.key}.html`);
       writeFileSync(outputPath, fullHtml, 'utf-8');
