@@ -114,12 +114,38 @@ trendradar:
 
 #### 图片配置
 
-| 要决定什么 | 可选项 | 说明 |
-|------------|--------|------|
-| 图片范围 | `cover+inline` / `cover-only` / `inline-only` / `none` | 决定是否生成封面、正文图、两者或都不生成 |
-| 图片风格 | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | 决定整篇文章图片的共同视觉方向 |
+图片配置只使用 `style.yaml.visuals`。旧字段 `cover_style`、`image_system`、`reference_accounts` 等不再使用。
 
-如果 `style.yaml` 没有 `visuals`，首次询问完整视觉配置，然后写入 `visuals`。用户可以跳过任意字段；跳过的字段使用 `references/visual-prompt-system.md` 中的默认值。后续默认按 `visuals` 执行，除非用户本次明确变更。
+```yaml
+visuals:
+  scope: "cover+inline"
+  style: "follow article tone"
+  palette: "default"
+  cover:
+    type: "typography"
+    mood: "balanced"
+    font: "clean"
+    text_level: "title-only"
+    aspect: "2.35:1"
+  inline:
+    density: "balanced"
+    type_default: "auto"
+```
+
+如果 `style.yaml` 没有 `visuals`，首次询问完整视觉配置，然后写入 `visuals`。用户可以跳过任意字段；跳过的字段使用 [visual-prompt-system.md](./references/visual-prompt-system.md) 中的默认值。后续默认按 `visuals` 执行，除非用户本次明确变更。
+
+| 字段 | 可选项 | 默认值 | 说明 |
+|------|--------|--------|------|
+| `visuals.scope` | `cover+inline` / `cover-only` / `inline-only` / `none` | `cover+inline` | 决定生成封面、正文图、两者或都不生成 |
+| `visuals.style` | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | `follow article tone` | 整篇文章图片的共同视觉方向 |
+| `visuals.palette` | `default` / `macaron` / `mono-ink` / `neon` / `warm` | `default` | 配色方案 |
+| `visuals.cover.type` | `hero` / `conceptual` / `typography` / `metaphor` / `scene` / `minimal` | `typography` | 封面构图类型，默认标题主导 |
+| `visuals.cover.mood` | `subtle` / `balanced` / `bold` | `balanced` | 封面视觉强度 |
+| `visuals.cover.font` | `clean` / `handwritten` / `serif` / `display` | `clean` | 封面字体方向 |
+| `visuals.cover.text_level` | `none` / `title-only` / `title-subtitle` / `text-rich` | `title-only` | 封面文字密度，默认仅标题 |
+| `visuals.cover.aspect` | `2.35:1` | `2.35:1` | 微信封面宽高比 |
+| `visuals.inline.density` | `minimal` / `balanced` / `per-section` / `rich` / `none` | `balanced` | 正文图数量规则，默认 3-5 张 |
+| `visuals.inline.type_default` | `auto` / `infographic` / `scene` / `flowchart` / `comparison` / `framework` / `timeline` | `auto` | 正文图默认类型；`auto` 由 agent 为每个目标显式选型 |
 
 #### 图片风格说明
 
@@ -137,6 +163,27 @@ trendradar:
 | `notebook-sketch` | 笔记本草图概念风 | 系统草图、抽象概念图 |
 | `claymation` | 黏土定格玩具风 | 亲和型表达、轻教育内容 |
 
+#### 配色方案
+
+| palette key | 中文名称 | 说明 |
+|-------------|----------|------|
+| `default` | 跟随风格配色 | 使用所选视觉风格的默认配色 |
+| `macaron` | 马卡龙 | 柔和色块，适合轻教育和亲和型内容 |
+| `mono-ink` | 黑白墨线 | 黑白线稿，适合草图、漫画、结构说明 |
+| `neon` | 霓虹 | 深色高饱和，适合 AI、工具、未来感主题 |
+| `warm` | 暖调 | 适合叙事、观点、个人经验文章 |
+
+#### 封面类型说明
+
+| type key | 中文名称 | 说明 |
+|----------|----------|------|
+| `hero` | 焦点视觉 | 一个强主体，第一眼冲击更强 |
+| `conceptual` | 概念解释 | 用抽象结构解释核心概念 |
+| `typography` | 标题主导 | 以标题版式为主，默认选项 |
+| `metaphor` | 隐喻表达 | 用具体物体或结构表达文章论点 |
+| `scene` | 场景氛围 | 用工作、生活或叙事场景定调 |
+| `minimal` | 极简留白 | 单焦点、少元素、大留白 |
+
 #### 正文图数量说明
 
 | 选项 | 说明 |
@@ -146,6 +193,18 @@ trendradar:
 | `per-section` | 尽量每个重点小节都配图 |
 | `rich` | 长文中覆盖更多高价值配图位置 |
 | `none` | 不生成正文图 |
+
+#### 正文图类型说明
+
+| type key | 中文名称 | 说明 |
+|----------|----------|------|
+| `auto` | 自动选型 | agent 根据每个插图目标显式选择下列类型之一 |
+| `infographic` | 数据图 | 模块化信息图、数字、层级信息 |
+| `scene` | 场景图 | 把段落翻译成一个可读场景 |
+| `flowchart` | 流程图 | 步骤、箭头、顺序和转折 |
+| `comparison` | 对比图 | before/after、方案对比、取舍关系 |
+| `framework` | 框架图 | 模块、层级、系统关系 |
+| `timeline` | 时间线 | 阶段、里程碑、演进过程 |
 
 #### 文章排版主题
 
@@ -158,9 +217,17 @@ trendradar:
 | `latepost-depth` | 观点拆解、趋势分析、强结构长文 |
 | `guardian` | 媒体感强、评论型文章 |
 | `wechat-ft` | 深度报道、商业长文 |
+| `wechat-nyt` | 深度报道、长篇特写 |
 | `wechat-deepread` | 长阅读、密度较高文章 |
 | `nikkei` | 技术/商业分析 |
 | `lemonde` | 深度阅读、偏报道气质文章 |
+| `wechat-elegant` | 个人表达、温和长文、创作者随笔 |
+| `kenya-emptiness` | 强留白、实验气质内容 |
+| `hische-editorial` | 插画感强、视觉识别度高的编辑风 |
+| `ando-concrete` | 冷静、建筑感、强秩序内容 |
+| `gaudi-organic` | 有机曲线、艺术感、创意表达 |
+| `wechat-jonyive` | 极简产品感、设计/产品文章 |
+| `wechat-apple` | Apple 风产品表达、发布会/产品分析 |
 
 如果没有指定主题，流程里会先询问你，或明确告诉你将使用哪个主题。
 
