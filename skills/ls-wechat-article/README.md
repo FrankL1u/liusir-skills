@@ -6,8 +6,8 @@ Universal WeChat Official Account workflow skill. It can draft articles, format 
 
 | You say | The skill does |
 |---------|----------------|
-| `Write a WeChat article for demo` | Runs the full workflow: topic -> framework + archetype -> draft -> editorial QA -> images -> theme -> draft publish |
-| `Publish this Markdown to WeChat drafts` | Skips drafting. If you did not forbid edits, it still runs shallow editorial QA before publish |
+| `Write a WeChat article for demo` | Runs the full workflow: topic -> framework + archetype -> title + draft -> editorial QA -> cover/inline images -> theme -> draft publish |
+| `Publish this Markdown to WeChat drafts` | Skips drafting. If you did not forbid content changes, it still runs diagnostic editorial QA before publish |
 | `Preview this article with latepost-depth` | Generates a local HTML preview |
 | `Show the last 7 days of article performance` | Fetches WeChat datacube stats and backfills `history.yaml` |
 | `Learn from my edits on this article` | Compares draft vs final and writes lessons |
@@ -98,7 +98,7 @@ Notes:
 | Step 2 | If no concrete topic is given, fetch topical signals |
 | Step 3 | Pick the article angle |
 | Step 3.5 | Pick the framework, article archetype, and output shape |
-| Step 4 | Search the latest related information, then draft with archetype-bound writing rules |
+| Step 4 | Search the latest related information, generate and score title candidates, select the H1, then draft with archetype-bound writing rules |
 | Step 4.5 | Run editorial QA, write `quality-report.md`, and report repair suggestions |
 | Step 5 | Generate the cover image from `style.yaml.visuals` |
 | Step 5.5 | Plan explicit inline targets, then generate inline images |
@@ -114,12 +114,38 @@ This skill handles two kinds of style:
 
 #### Image setup
 
-| What you decide | Options | Meaning |
-|-----------------|---------|---------|
-| Image scope | `cover+inline` / `cover-only` / `inline-only` / `none` | Whether to generate a cover, inline images, both, or none |
-| Image style | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | Shared visual direction for the article's images |
+Image configuration only uses `style.yaml.visuals`. Legacy fields such as `cover_style`, `image_system`, and `reference_accounts` are no longer used.
+
+```yaml
+visuals:
+  scope: "cover+inline"
+  style: "follow article tone"
+  palette: "default"
+  cover:
+    type: "typography"
+    mood: "balanced"
+    font: "clean"
+    text_level: "title-only"
+    aspect: "2.35:1"
+  inline:
+    density: "balanced"
+    type_default: "auto"
+```
 
 If `style.yaml` has no `visuals`, ask for the complete first-run visual configuration, then write `visuals`. The user may skip any field; skipped fields use the defaults from `references/visual-prompt-system.md`. Later runs follow `visuals` without asking unless the user changes the setting for the current run.
+
+| Field | Options | Default | Meaning |
+|-------|---------|---------|---------|
+| `visuals.scope` | `cover+inline` / `cover-only` / `inline-only` / `none` | `cover+inline` | Whether to generate cover, inline images, both, or none |
+| `visuals.style` | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | `follow article tone` | Shared visual direction for all article images |
+| `visuals.palette` | `default` / `macaron` / `mono-ink` / `neon` / `warm` | `default` | Color palette |
+| `visuals.cover.type` | `hero` / `conceptual` / `typography` / `metaphor` / `scene` / `minimal` | `typography` | Cover composition type; default is title-led |
+| `visuals.cover.mood` | `subtle` / `balanced` / `bold` | `balanced` | Cover visual intensity |
+| `visuals.cover.font` | `clean` / `handwritten` / `serif` / `display` | `clean` | Cover typography direction |
+| `visuals.cover.text_level` | `none` / `title-only` / `title-subtitle` / `text-rich` | `title-only` | Cover text density; default uses only the article title |
+| `visuals.cover.aspect` | `2.35:1` | `2.35:1` | WeChat cover aspect ratio |
+| `visuals.inline.density` | `minimal` / `balanced` / `per-section` / `rich` / `none` | `balanced` | Inline image quantity rule; default is 3-5 images |
+| `visuals.inline.type_default` | `auto` / `infographic` / `scene` / `flowchart` / `comparison` / `framework` / `timeline` | `auto` | Default inline image type; `auto` means the agent explicitly selects a type per target |
 
 #### Image styles
 
@@ -137,6 +163,27 @@ If `style.yaml` has no `visuals`, ask for the complete first-run visual configur
 | `notebook-sketch` | Notebook concept sketch style | System sketches, abstract concepts |
 | `claymation` | Clay / stop-motion toy style | Friendly educational content |
 
+#### Palettes
+
+| Palette key | Meaning | Best for |
+|-------------|---------|----------|
+| `default` | Follow the selected style's default palette | General use |
+| `macaron` | Soft pastel color blocks | Friendly and light educational content |
+| `mono-ink` | Black-and-white ink lines | Sketches, manga, structural explanation |
+| `neon` | Dark high-saturation neon | AI, tools, future-facing technology |
+| `warm` | Warm reading-friendly colors | Narrative, opinion, and personal experience articles |
+
+#### Cover types
+
+| Type key | Meaning | Best for |
+|----------|---------|----------|
+| `hero` | One dominant focal subject | Strong first-glance impact |
+| `conceptual` | Abstract visual system | Explaining a core concept |
+| `typography` | Title-led poster composition | Default cover, title-first articles |
+| `metaphor` | Concrete symbolic object or structure | Argument-driven pieces |
+| `scene` | Work, life, or narrative scene | Tone-setting covers |
+| `minimal` | Single focal element and whitespace | Quiet, restrained covers |
+
 #### Inline image density
 
 | Option | Meaning |
@@ -146,6 +193,18 @@ If `style.yaml` has no `visuals`, ask for the complete first-run visual configur
 | `per-section` | Try to illustrate each strong section |
 | `rich` | Cover more high-value visual positions in long articles |
 | `none` | Do not generate inline images |
+
+#### Inline image types
+
+| Type key | Meaning |
+|----------|---------|
+| `auto` | Agent chooses one explicit type for each inline target |
+| `infographic` | Modular information graphic with numbers and hierarchy |
+| `scene` | A readable visual scene based on the paragraph |
+| `flowchart` | Steps, arrows, sequence, and transitions |
+| `comparison` | Before/after, option comparison, or tradeoff layout |
+| `framework` | Modules, layers, and system relationships |
+| `timeline` | Stages, milestones, or evolution over time |
 
 #### Layout themes
 
@@ -158,18 +217,40 @@ If `style.yaml` has no `visuals`, ask for the complete first-run visual configur
 | `latepost-depth` | Strong hierarchy, trend and judgment articles |
 | `guardian` | Media-style commentary |
 | `wechat-ft` | Business long-form essays |
+| `wechat-nyt` | Long-form reporting and feature writing |
 | `wechat-deepread` | Dense long reading |
 | `nikkei` | Technical and business analysis |
 | `lemonde` | Deep reported reading tone |
+| `wechat-elegant` | Personal essays and softer creator writing |
+| `kenya-emptiness` | Strong whitespace and experimental tone |
+| `hische-editorial` | Illustration-heavy editorial identity |
+| `ando-concrete` | Cool, architectural, highly ordered layouts |
+| `gaudi-organic` | Organic curves and creative expression |
+| `wechat-jonyive` | Minimal product and design writing |
+| `wechat-apple` | Apple-like product launches and product analysis |
 
 If the user does not specify a theme, the workflow should either ask for one or explicitly tell the user which theme will be used.
+
+#### Title generation rules
+
+Before drafting the body in Step 4, the workflow reads [seo-rules.md](./references/seo-rules.md), generates and scores title candidates, then writes the selected H1 into `article.md`.
+
+The title is not a summary; it is a reason to click. Each candidate should use at least one motivation:
+
+- clear point of view
+- curiosity question
+- cognitive contrast
+- suspense gap
+- pain point or benefit
+
+Step 4.5 checks title length, core keyword position, whether the body delivers the title promise, and whether the digest avoids repeating the title.
 
 ### 3. Usage Modes
 
 | Usage mode | When to use it | Example |
 |------------|----------------|---------|
 | Start from a topic | You have a topic but no draft yet | `Help me write a WeChat article about AI coding` |
-| Start from Markdown | You already have Markdown and need formatting, preview, or publish. By default the skill still runs shallow editorial QA unless you say `publish only` or `do not change content` | `Format this Markdown for WeChat and publish it to drafts` |
+| Start from Markdown | You already have Markdown and need formatting, preview, or publish. By default the skill still runs diagnostic editorial QA unless you say `publish only` or `do not change content` | `Format this Markdown for WeChat and publish it to drafts` |
 | Start from a specific step | You want to enter at a specific workflow step | `Start from --step 3.5 and help me choose a framework` |
 | Decide cover first | You want to review cover settings before generation | `Start from --step 5 and show me the cover plan` |
 | Decide inline images first | You want to review explicit inline targets before generation | `Start from --step 5.5 and show me inline image targets` |
@@ -210,7 +291,8 @@ node dist/learn-edits.js --client demo --draft draft.md --final final.md
 node dist/build-playbook.js --client demo
 ```
 
-If `--cover` is omitted during publish, the tool will try to use the first image in the article as the draft cover.
+The HTML preview automatically renders `cover.png` / `cover.jpg` / `cover.jpeg` / `cover.webp` from the article directory at the top of the page. Publishing to WeChat drafts does not insert that cover image into the article body.
+To use the Step 5 cover during publish, pass it explicitly with `--cover cover.png`. If `--cover` is omitted, the tool will try to use the first image in the article as the draft cover.
 `editorial-qa` writes `quality-report.md` into the article bundle and keeps Step 4.5 quality judgment explicit instead of hiding it inside the agent response.
 `illustrate` writes article output to `{runtime_root}/output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`. The toolkit no longer chooses positions or image types on its own; pass explicit `--target` entries from the agent. Prefer paragraph/content-block anchors; heading targets remain supported as a fallback for backward compatibility.
 
