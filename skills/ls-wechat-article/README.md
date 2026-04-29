@@ -99,10 +99,11 @@ Notes:
 | Step 3 | Pick the article angle |
 | Step 3.5 | Pick the framework, article archetype, and output shape |
 | Step 4 | Search the latest related information, then draft with archetype-bound writing rules |
-| Step 5 | Run `5A auto-fix` and `5B editorial QA` |
-| Step 6 | Decide image scope, image style, inline image density, then convert that into explicit cover and inline targets |
-| Step 7 | Decide theme, generate HTML, preview or publish to drafts |
-| Step 8 | Update `history.yaml`, backfill stats, learn edits, refresh playbook |
+| Step 4.5 | Run editorial QA, write `quality-report.md`, and report repair suggestions |
+| Step 5 | Generate the cover image from `style.yaml.visuals` |
+| Step 5.5 | Plan explicit inline targets, then generate inline images |
+| Step 6 | Decide theme, generate HTML, preview or publish to drafts |
+| Step 7 | Update `history.yaml`, backfill stats, learn edits, refresh playbook |
 
 ### 2. Style Guide
 
@@ -115,9 +116,10 @@ This skill handles two kinds of style:
 
 | What you decide | Options | Meaning |
 |-----------------|---------|---------|
-| Image scope | `cover + inline images` / `cover only` / `inline only` / `no images` | Whether to generate a cover, inline images, both, or none |
+| Image scope | `cover+inline` / `cover-only` / `inline-only` / `none` | Whether to generate a cover, inline images, both, or none |
 | Image style | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | Shared visual direction for the article's images |
-| Inline image density | `minimal` / `balanced` / `per-section` / `custom` | Agent planning input for how many inline targets to prepare |
+
+If `style.yaml` has no `visuals`, ask for the complete first-run visual configuration, then write `visuals`. The user may skip any field; skipped fields use the defaults from `references/visual-prompt-system.md`. Later runs follow `visuals` without asking unless the user changes the setting for the current run.
 
 #### Image styles
 
@@ -142,7 +144,8 @@ This skill handles two kinds of style:
 | `minimal` | A few key images, usually `1-2` |
 | `balanced` | Standard density, usually `3-5` |
 | `per-section` | Try to illustrate each strong section |
-| `custom` | User specifies the number |
+| `rich` | Cover more high-value visual positions in long articles |
+| `none` | Do not generate inline images |
 
 #### Layout themes
 
@@ -168,9 +171,10 @@ If the user does not specify a theme, the workflow should either ask for one or 
 | Start from a topic | You have a topic but no draft yet | `Help me write a WeChat article about AI coding` |
 | Start from Markdown | You already have Markdown and need formatting, preview, or publish. By default the skill still runs shallow editorial QA unless you say `publish only` or `do not change content` | `Format this Markdown for WeChat and publish it to drafts` |
 | Start from a specific step | You want to enter at a specific workflow step | `Start from --step 3.5 and help me choose a framework` |
-| Decide images first | You want to decide image scope, style, density, and explicit image targets before generation | `Start from --step 6 and let me decide image settings` |
-| Decide theme and publish | You already have the article and only need theme, preview, or publish | `Start from --step 7 and tell me which theme will be used` |
-| Review and learning | You want stats, edit-learning, or playbook refresh | `Start from --step 8 and help me update history, stats, and lessons` |
+| Decide cover first | You want to review cover settings before generation | `Start from --step 5 and show me the cover plan` |
+| Decide inline images first | You want to review explicit inline targets before generation | `Start from --step 5.5 and show me inline image targets` |
+| Decide theme and publish | You already have the article and only need theme, preview, or publish | `Start from --step 6 and tell me which theme will be used` |
+| Review and learning | You want stats, edit-learning, or playbook refresh | `Start from --step 7 and help me update history, stats, and lessons` |
 
 ## Common Commands
 
@@ -191,10 +195,10 @@ node dist/cli.js editorial-qa article.md --client demo
 node dist/cli.js theme-preview article.md
 
 # Inline illustrations
-node dist/cli.js illustrate article.md --client demo --style editorial --target "先定义输入，再定义输出，最后定义回看路径::flowchart" --target "不要把验证留到最后，应该让验证跟执行一起发生::framework" --provider qwen
+node dist/cli.js illustrate article.md --client demo --style editorial --palette default --target "先定义输入，再定义输出，最后定义回看路径::flowchart" --target "不要把验证留到最后，应该让验证跟执行一起发生::framework" --provider qwen
 
 # Cover generation
-node dist/cli.js cover article.md --client demo --style blueprint --type conceptual --provider openai
+node dist/cli.js cover article.md --client demo --style blueprint --palette default --type typography --text-level title-only --provider openai
 
 # Stats backfill
 node dist/fetch-stats.js --client demo --days 7
@@ -207,10 +211,10 @@ node dist/build-playbook.js --client demo
 ```
 
 If `--cover` is omitted during publish, the tool will try to use the first image in the article as the draft cover.
-`editorial-qa` writes `quality-report.md` into the article bundle and keeps Step 5 output explicit instead of hiding quality judgment inside the agent response.
+`editorial-qa` writes `quality-report.md` into the article bundle and keeps Step 4.5 quality judgment explicit instead of hiding it inside the agent response.
 `illustrate` writes article output to `{runtime_root}/output/{client}/{date}-{title-slug}/`, including `article.md`, `assets/`, and `prompts/`. The toolkit no longer chooses positions or image types on its own; pass explicit `--target` entries from the agent. Prefer paragraph/content-block anchors; heading targets remain supported as a fallback for backward compatibility.
 
-The shared image style library lives in [references/image-system.yaml](./references/image-system.yaml). Runtime client data lives under `{runtime_root}/clients/{client}/style.yaml` and only stores default theme, writing profile, and client-specific overrides.
+The shared visual prompt system lives in [references/visual-prompt-system.md](./references/visual-prompt-system.md). Runtime client data lives under `{runtime_root}/clients/{client}/style.yaml` and stores `visuals` together with writing profile and default theme.
 
 ## Continuous Learning
 

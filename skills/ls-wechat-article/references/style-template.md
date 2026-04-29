@@ -20,20 +20,25 @@ blacklist:
   words: [空话, 套话]
   topics: [不写的话题]
 
-reference_accounts: [账号1, 账号2]
-
 theme: "wechat-tech"
 
-cover_style: "clean tech illustration"
-
-image_system:
-  defaults:
-    cover_style: "editorial"
-    inline_style: "editorial"
+visuals:
+  scope: "cover+inline"
+  style: "follow article tone"
+  palette: "default"
+  cover:
+    type: "typography"
+    mood: "balanced"
+    font: "clean"
+    text_level: "title-only"
+    aspect: "2.35:1"
+  inline:
+    density: "balanced"
+    type_default: "auto"
 author: "Author name"
 ```
 
-The shared image style library is defined in `references/image-system.yaml`.
+The shared visual prompt system is defined in `references/visual-prompt-system.md`.
 Client `style.yaml` should only set the default public theme plus client-specific writing and image overrides.
 
 ## Directory structure

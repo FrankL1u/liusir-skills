@@ -1,10 +1,13 @@
 # Editorial QA
 
-Use this file for Step 5B.
+Use this file for Step 4.5.
+
+Step 4.5 is diagnostic first. It runs after article drafting and before visuals, preview, or publishing.
 
 Output:
 
 - write `quality-report.md` into the article bundle
+- provide a concise repair plan to the user after QA
 - keep the report structure fixed
 - do not improvise a different checklist per article
 
@@ -13,9 +16,9 @@ Output path:
 - if the input is already `{runtime_root}/output/{client}/{date}-{slug}/article.md`, write the report beside it
 - otherwise create a standard output bundle first, then write `article.md` and `quality-report.md` into that bundle
 
-## Step 5A: Auto-Fix Scope
+## Optional Revision Scope
 
-Auto-fix only handles shallow, deterministic edits.
+If the user explicitly asks for revision after Step 4.5, use `quality-report.md` as the edit brief. Default optional revision only handles shallow, deterministic edits.
 
 Allowed:
 
@@ -23,6 +26,7 @@ Allowed:
 - replace generic tool names with already-mentioned concrete tools
 - rewrite hypothetical examples into explicit “未亲测” disclosures when no first-hand scene exists
 - surface likely over-symmetry or list-heavy pacing as warnings
+- revise only the affected sections when Step 4.5 identifies deeper rewrite needs and the user asks for those fixes
 
 Not allowed:
 
@@ -30,8 +34,9 @@ Not allowed:
 - fabricate personal feelings
 - introduce new data, cases, or claims
 - rewrite the whole article structure without user intent
+- change the selected `framework`, `article_archetype`, or `output_shape`
 
-## Step 5B: Fixed Report Template
+## Step 4.5: Fixed Report Template
 
 The report must always contain these parts in order:
 
@@ -46,11 +51,32 @@ The report must always contain these parts in order:
 9. `待人工确认`
 10. `总评`
 11. `修复优先级`
+12. `修复建议`
+
+## Repair Plan Feedback
+
+After writing `quality-report.md`, always report the repair plan to the user.
+
+The feedback must include:
+
+- top 3-5 fixes
+- priority for each fix: `P1` / `P2` / `P3`
+- whether the fix is `shallow edit` or `targeted rewrite`
+- which section or paragraph is affected
+- any user decision needed before optional revision
+
+Do not ask for confirmation for obvious shallow fixes in auto mode.
+Ask only when the repair would change the article angle, selected framework, factual scope, or first-person stance.
 
 ## L1 硬性规则
 
 Check:
 
+- title exists as the primary H1
+- title creates a reader click reason instead of only summarizing the topic
+- title uses at least one motivation type from `references/seo-rules.md`
+- title promise is delivered by the body
+- digest does not repeat the title
 - banned lexical patterns
 - banned structural patterns
 - hypothetical examples
@@ -59,8 +85,19 @@ Check:
 
 Blocking rule:
 
-- L1 failure can block Step 7 when the issue is a real publish failure, such as missing title, unsupported content, or invalid article structure
-- stylistic L1 failures that have been auto-fixed do not block if the fixed article is already written back
+- L1 failure can block Step 6 when the issue is a real publish failure, such as missing title, unsupported content, or invalid article structure
+- unsupported title promises should block publishing only when the mismatch would materially mislead readers; otherwise record a high-priority repair suggestion
+- stylistic L1 failures do not block if they are recorded with clear repair suggestions and do not create a real publish failure
+
+Title QA output must include:
+
+- selected title
+- title length
+- detected motivation type: `观点鲜明` / `好奇疑问` / `认知反差` / `悬念缺口` / `痛点利益`
+- core keyword position
+- whether the body delivers the title promise
+- whether the digest adds a separate hook
+- suggested replacement title when the current title fails
 
 ## L2 风格一致性
 
@@ -104,7 +141,7 @@ Check:
 - posture
 - flow breaks
 
-Do not block Step 7 for isolated L4 misses.
+Do not block Step 6 for isolated L4 misses.
 Instead:
 
 - report them
@@ -119,13 +156,12 @@ If the user says:
 - `仅发布`
 - `不要改内容`
 
-then skip Step 5 and go directly to Step 7.
+then skip Step 4.5 and go directly to Step 6.
 
 For all other raw Markdown intake:
 
-- run Step 5A
-- run Step 5B
-- then continue to Step 7
+- run Step 4.5
+- then continue to Step 6
 
-This route is still shallow editing only.
-Do not silently re-outline or rewrite the article unless the user asked for deeper editing.
+This route is still conservative by default.
+Do not silently re-outline or rewrite the whole article unless the user asked for deeper editing.

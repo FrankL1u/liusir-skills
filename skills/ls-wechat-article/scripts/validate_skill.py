@@ -13,7 +13,7 @@ REQUIRED_PATHS = [
     "SKILL.md",
     "README.md",
     "config.example.yaml",
-    "references/image-system.yaml",
+    "references/visual-prompt-system.md",
     "agents/openai.yaml",
     "references/cli-reference.md",
     "references/article-archetypes.md",
@@ -90,10 +90,10 @@ OPENAI_YAML_TOKENS = [
 ]
 
 PIPELINE_IMAGE_INTAKE_TOKENS = [
-    "cover + inline images",
-    "cover only",
-    "inline only",
-    "no images",
+    "cover+inline",
+    "cover-only",
+    "inline-only",
+    "none",
 ]
 
 

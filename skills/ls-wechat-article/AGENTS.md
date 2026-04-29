@@ -22,13 +22,13 @@ Do not invent a separate high-level router in code unless a workflow step has cl
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/pipeline.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/operations.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/visual-prompts.md`
+- `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/visual-prompt-system.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-style-config.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/cli-reference.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/article-archetypes.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/editorial-qa.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/rewrite-examples.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/theme-selection.md`
-- `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/clients/{client}/style.yaml`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/cli.ts`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/illustration-workflow.ts`
@@ -58,7 +58,7 @@ Optional image providers:
 - `image.providers.qwen`
 
 Client config conventions:
-- `clients/{client}/style.yaml` stores writing profile, default public theme, and image defaults
+- `clients/{client}/style.yaml` stores writing profile, default public theme, and `visuals`
 - do not add dead typography fields back into `style.yaml` unless the execution layer actually consumes them
 - global `config.yaml` still owns CLI defaults such as `theme`
 
@@ -69,7 +69,7 @@ Client config conventions:
 Use when the user gives a client and wants a full article:
 
 ```text
-Step 1 -> Step 2 -> Step 3 -> Step 3.5 -> Step 4 -> Step 5 -> Step 6 -> Step 7
+Step 1 -> Step 2 -> Step 3 -> Step 3.5 -> Step 4 -> Step 4.5 -> Step 5 -> Step 6 -> Step 7
 ```
 
 Routing is defined in:
@@ -81,8 +81,8 @@ Routing is defined in:
 If the user already provides Markdown:
 
 ```text
-default: Step 5A -> Step 5B -> Step 7
-only if the user explicitly says publish-only / format-only / do-not-edit: Step 7
+default: Step 4.5 -> Step 6
+only if the user explicitly says publish-only / format-only / do-not-edit: Step 6
 ```
 
 ### Explicit step override
@@ -128,7 +128,7 @@ node dist/cli.js cover article.md --client liusir2035 --provider qwen
 
 This uses:
 - `cover_type × style`
-- article content + client `image_system`
+- article content + client `visuals` + `references/visual-prompt-system.md`
 - output:
   - `cover.png`
   - `prompts/cover.prompt.txt`
@@ -161,7 +161,7 @@ node dist/cli.js style-benchmark --provider qwen --output-dir /abs/path/output/s
 Inline images and cover images now share the same formal style system.
 
 Definitions live in:
-- `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/image-system.yaml`
+- `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/references/visual-prompt-system.md`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/clients/{client}/style.yaml`
 - `/Users/frank/Documents/MyStudio/LS-SKILLS/skills/ls-wechat-article/toolkit/src/image-style-system.ts`
 

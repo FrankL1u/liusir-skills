@@ -391,7 +391,32 @@ export class WeChatConverter {
 /**
  * 生成完整 HTML 用于浏览器预览（仅本地预览，非微信发布用）
  */
-export function previewHtml(bodyHtml: string, theme: Theme, baseHref?: string): string {
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function renderPreviewCover(coverSrc?: string): string {
+  if (!coverSrc) return '';
+  const safeSrc = escapeHtmlAttribute(coverSrc);
+  return `
+            <figure class="preview-cover">
+                <img class="preview-cover-image" src="${safeSrc}" alt="封面图">
+            </figure>`;
+}
+
+function bodyAlreadyRendersImage(bodyHtml: string, imageSrc?: string): boolean {
+  if (!imageSrc) return false;
+  const escapedSrc = escapeHtmlAttribute(imageSrc);
+  return bodyHtml.includes(`src="${escapedSrc}"`) || bodyHtml.includes(`src='${escapedSrc}'`);
+}
+
+export function previewHtml(bodyHtml: string, theme: Theme, baseHref?: string, coverSrc?: string): string {
+  const previewCover = bodyAlreadyRendersImage(bodyHtml, coverSrc) ? undefined : coverSrc;
+
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -434,6 +459,17 @@ export function previewHtml(bodyHtml: string, theme: Theme, baseHref?: string): 
         .preview-body {
             padding-top: 8px;
         }
+        .preview-cover {
+            margin: 0 0 28px;
+        }
+        .preview-cover-image {
+            width: 100%;
+            aspect-ratio: 2.35 / 1;
+            object-fit: cover;
+            display: block;
+            border-radius: 6px;
+            background: #f2f2f2;
+        }
     </style>
 </head>
 <body>
@@ -443,6 +479,7 @@ export function previewHtml(bodyHtml: string, theme: Theme, baseHref?: string): 
             <span class="theme-badge">${theme.key}</span>
         </div>
         <div class="preview-body">
+            ${renderPreviewCover(previewCover)}
             ${bodyHtml}
         </div>
     </div>

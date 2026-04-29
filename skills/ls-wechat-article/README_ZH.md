@@ -99,10 +99,11 @@ trendradar:
 | Step 3 | 选择文章选题 |
 | Step 3.5 | 选择框架、文章原型和输出 shape |
 | Step 4 | 先搜索最新相关资讯，再按原型约束生成文章草稿 |
-| Step 5 | 执行 `5A auto-fix` 和 `5B editorial QA` |
-| Step 6 | 决定图片范围、图片风格和正文图数量 |
-| Step 7 | 决定主题，生成 HTML，预览或发布到草稿箱 |
-| Step 8 | 更新 `history.yaml`，回填 stats，学习改稿，刷新 playbook |
+| Step 4.5 | 执行质检，写 `quality-report.md`，反馈修复建议 |
+| Step 5 | 按 `style.yaml.visuals` 生成封面图 |
+| Step 5.5 | 规划明确的正文图目标，然后生成正文配图 |
+| Step 6 | 决定主题，生成 HTML，预览或发布到草稿箱 |
+| Step 7 | 更新 `history.yaml`，回填 stats，学习改稿，刷新 playbook |
 
 ### 2. 风格化说明
 
@@ -115,9 +116,10 @@ trendradar:
 
 | 要决定什么 | 可选项 | 说明 |
 |------------|--------|------|
-| 图片范围 | `cover + inline images` / `cover only` / `inline only` / `no images` | 决定是否生成封面、正文图、两者或都不生成 |
+| 图片范围 | `cover+inline` / `cover-only` / `inline-only` / `none` | 决定是否生成封面、正文图、两者或都不生成 |
 | 图片风格 | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | 决定整篇文章图片的共同视觉方向 |
-| 正文图数量 | `minimal` / `balanced` / `per-section` / `custom` | 这是 agent 的规划输入，用来决定要准备多少个显式正文图目标 |
+
+如果 `style.yaml` 没有 `visuals`，首次询问完整视觉配置，然后写入 `visuals`。用户可以跳过任意字段；跳过的字段使用 `references/visual-prompt-system.md` 中的默认值。后续默认按 `visuals` 执行，除非用户本次明确变更。
 
 #### 图片风格说明
 
@@ -142,7 +144,8 @@ trendradar:
 | `minimal` | 少量重点图，通常 `1-2 张` |
 | `balanced` | 标准配图，通常 `3-5 张` |
 | `per-section` | 尽量每个重点小节都配图 |
-| `custom` | 自定义正文图数量 |
+| `rich` | 长文中覆盖更多高价值配图位置 |
+| `none` | 不生成正文图 |
 
 #### 文章排版主题
 
@@ -168,9 +171,10 @@ trendradar:
 | 从 topic 开始 | 你只有一个想写的主题，还没有文章草稿 | `帮我写一篇关于 AI 编程的公众号文章` |
 | 从 Markdown 开始 | 你已经有现成 Markdown，只需要排版、预览或发布。默认仍会做浅层质检，除非你明确说 `仅发布` 或 `不要改内容` | `把这篇 Markdown 排版成公众号样式并发布到草稿箱` |
 | 从指定步骤开始 | 你不想走完整流程，只想从某一步接着做 | `从 --step 3.5 开始，我想先选框架` |
-| 先做图片决策 | 你想单独先决定图片范围、风格、配图数量和显式图片目标 | `从 --step 6 开始，我想先决定图片配置` |
-| 先做主题与发布 | 你已经有文章，只想确认主题、预览或发布 | `从 --step 7 开始，先告诉我会用什么主题` |
-| 做复盘与学习 | 你想看文章表现、学习人工改稿，或刷新 playbook | `从 --step 8 开始，帮我更新 history、stats 和 lessons` |
+| 先做封面 | 你想先看封面配置或封面计划 | `从 --step 5 开始，先看封面计划` |
+| 先做正文图 | 你想先看正文图目标位置 | `从 --step 5.5 开始，先看正文图目标` |
+| 先做主题与发布 | 你已经有文章，只想确认主题、预览或发布 | `从 --step 6 开始，先告诉我会用什么主题` |
+| 做复盘与学习 | 你想看文章表现、学习人工改稿，或刷新 playbook | `从 --step 7 开始，帮我更新 history、stats 和 lessons` |
 
 ## 常用命令
 
@@ -191,10 +195,10 @@ node dist/cli.js editorial-qa article.md --client demo
 node dist/cli.js theme-preview article.md
 
 # 正文配图
-node dist/cli.js illustrate article.md --client demo --style editorial --target "先定义输入，再定义输出，最后定义回看路径::flowchart" --target "不要把验证留到最后，应该让验证跟执行一起发生::framework" --provider qwen
+node dist/cli.js illustrate article.md --client demo --style editorial --palette default --target "先定义输入，再定义输出，最后定义回看路径::flowchart" --target "不要把验证留到最后，应该让验证跟执行一起发生::framework" --provider qwen
 
 # 生成封面
-node dist/cli.js cover article.md --client demo --style blueprint --type conceptual --provider openai
+node dist/cli.js cover article.md --client demo --style blueprint --palette default --type typography --text-level title-only --provider openai
 
 # 数据回填
 node dist/fetch-stats.js --client demo --days 7
@@ -206,11 +210,11 @@ node dist/learn-edits.js --client demo --draft draft.md --final final.md
 node dist/build-playbook.js --client demo
 ```
 
-发布时如果不传 `--cover`，工具会尝试使用正文第一张图片作为草稿封面。  
-`editorial-qa` 会把 `quality-report.md` 写进文章 bundle，让 Step 5 的判断有明确产物，而不是只留在 agent 口头说明里。  
+发布时如果不传 `--cover`，工具会尝试使用正文第一张图片作为草稿封面。
+`editorial-qa` 会把 `quality-report.md` 写进文章 bundle，让 Step 4.5 的质检判断有明确产物，而不是只留在 agent 口头说明里。
 `illustrate` 默认会把本次文章产物写入 `{runtime_root}/output/{client}/{date}-{title-slug}/`，其中包含 `article.md`、`assets/` 和 `prompts/`。toolkit 不再自己决定该配哪些位置、该用什么图片类型；这些都要由 agent 先选好，再显式传入 `--target`。优先传段落/内容块锚点，旧的标题 target 继续兼容，作为 fallback。
 
-公共图片风格库位于 [references/image-system.yaml](./references/image-system.yaml)。运行态 client 数据位于 `{runtime_root}/clients/{client}/style.yaml`，只配置默认主题、写作画像和 client 覆盖项。
+公共视觉 prompt 系统位于 [references/visual-prompt-system.md](./references/visual-prompt-system.md)。运行态 client 数据位于 `{runtime_root}/clients/{client}/style.yaml`，其中 `visuals` 保存该账号的默认视觉配置。
 
 ## 让文章越写越像这个号
 

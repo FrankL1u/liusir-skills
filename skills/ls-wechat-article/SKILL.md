@@ -134,18 +134,19 @@ Read files on demand. Do not load everything upfront.
 | `references/operations.md` | First-run setup, client onboarding, publishing support, analytics, and learning workflows |
 | `references/writing-guide.md` | Writing quality bar and de-AI rules |
 | `references/article-archetypes.md` | Archetype routing and shape binding |
-| `references/editorial-qa.md` | Step 5 report template and blocking rules |
-| `references/rewrite-examples.md` | Few-shot rewrite patterns for Step 5A |
+| `references/editorial-qa.md` | Step 4.5 report template, repair-plan output, and blocking rules |
+| `references/rewrite-examples.md` | Few-shot rewrite patterns for optional user-requested revision |
 | `references/frameworks.md` | Article framework selection |
 | `references/topic-selection.md` | Topic scoring and angle selection |
 | `references/seo-rules.md` | Title, digest, tags, and SEO polish |
 | `references/visual-prompts.md` | Cover and inline image prompt guidance |
+| `references/visual-prompt-system.md` | Machine-readable visual prompt system and defaults |
 | `references/theme-selection.md` | Public theme recommendation matrix |
 | `references/style-template.md` | Client style template |
 | `references/wechat-constraints.md` | WeChat rendering constraints |
 | `references/cli-reference.md` | CLI command reference |
 | `references/skill-maintenance.md` | Skill maintenance and validation rules |
-| `{runtime_root}/clients/{client}/style.yaml` | Client voice, default theme, and image defaults |
+| `{runtime_root}/clients/{client}/style.yaml` | Client voice, default theme, and `visuals` defaults |
 | `{runtime_root}/clients/{client}/history.yaml` | Publish history and analytics |
 | `{runtime_root}/clients/{client}/playbook.md` | Client-specific writing playbook |
 | `toolkit/dist/*.js` | Built CLI entrypoints |
@@ -157,10 +158,10 @@ Read files on demand. Do not load everything upfront.
 
 - Move the workflow forward without pausing by default
 - Stop only when required input is missing, a step and its fallback both fail, or the workflow reaches an explicit user-decision boundary
-- If the user explicitly says `仅排版` / `仅发布` / `不要改内容`, skip directly to Step 7
-- If the user provides raw Markdown without that restriction, skip drafting but still run Step 5A and Step 5B before Step 7
+- If the user explicitly says `仅排版` / `仅发布` / `不要改内容`, skip directly to Step 6
+- If the user provides raw Markdown without that restriction, skip drafting but still run Step 4.5 before Step 6
 - If the user provides a concrete topic, skip hotspot mining and topic generation
-- Before image generation, ask once about image scope, style, and inline image density unless the user already specified them
+- Before image generation, if `style.yaml` has no `visuals`, ask for the complete first-run visual configuration. Use defaults only for skipped or unset fields, then initialize `style.yaml.visuals`
 - Before preview or publish, ask for a theme or clearly state the auto-selected theme
 
 ### Step Override
@@ -169,42 +170,46 @@ Treat `--step N` as an explicit routing and pause directive.
 
 - `--step 3` means generate topic candidates and stop
 - `--step 3.5` means generate framework proposals and stop
-- `--step 6` means plan visuals and stop
-- `--step 7` means start from formatting and publishing
-- `--step 8` means start from post-publish maintenance tasks
+- `--step 5` means generate or review the cover plan and stop
+- `--step 5.5` means plan inline image targets and stop
+- `--step 6` means start from formatting and publishing
+- `--step 7` means start from post-publish maintenance tasks
 
 ## Critical Quality Rules
 
-1. Read `references/writing-guide.md` before drafting.
+1. Read `references/writing-guide.md` and `references/seo-rules.md` before drafting.
 2. Before Step 4 drafting, gather fresh related information for the article subject. Do not draft “latest / trend / current state” articles from memory only.
 3. In Step 3.5, choose both `framework` and `article_archetype`, then bind `output_shape`.
-4. Keep the H1 title concise and WeChat-friendly.
+4. In Step 4, generate and score title candidates from `references/seo-rules.md`, then select one H1 before drafting the body.
 5. The digest must not repeat the title.
 6. Respect the blacklist and tone fields in `{runtime_root}/clients/{client}/style.yaml`.
 7. Route from Step 1 based on the actual input type instead of forcing the full pipeline every time.
 8. Respect explicit `--step` routing and stop at that step.
-9. Step 5 is two-stage: `5A auto-fix` then `5B editorial QA`.
-10. Step 5B must write `quality-report.md` beside the article bundle.
-11. Before generating visuals, ask about image scope, style, and inline image density unless the user already specified them.
-12. In Step 6, the agent must choose the explicit cover type and explicit inline targets before calling toolkit commands. Prefer paragraph/content-block anchors; use H2/H3 headings only as fallback. Do not let the toolkit infer them from article content.
-13. Before preview or publish, ask for a theme or explicitly state the chosen theme.
-14. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
-15. If publishing fails, fall back to local preview instead of stopping the workflow.
-16. Use configured image providers only: Gemini, OpenAI, Doubao, or Qwen.
+9. Step 4.5 is Editorial QA and must run after drafting.
+10. Step 4.5 must write `quality-report.md` beside the article bundle and report a concise repair plan to the user. Do not revise the article unless the user explicitly asks for revision.
+11. Before generating visuals, if `style.yaml` has no `visuals`, ask for all first-run visual fields, then initialize `style.yaml.visuals`; if a field is skipped or unset, use its default from `references/visual-prompt-system.md`; if `visuals` exists, follow it without asking.
+12. In Step 5, generate cover images. Default cover type is `typography`; default text level is `title-only`.
+13. In Step 5.5, generate inline images. Default inline density is `balanced`; default inline type is `auto`, but the agent must convert it into explicit `--target "{anchor}::{inline_type}"` entries before calling the toolkit.
+14. If the user changes visual settings for the current run, ask whether to write the changed `visuals` back for future runs.
+15. Before preview or publish, ask for a theme or explicitly state the chosen theme.
+16. When the workflow reaches publishing, publish directly to WeChat drafts. Do not ask for an extra publish confirmation.
+17. If publishing fails, fall back to local preview instead of stopping the workflow.
+18. Use configured image providers only: Gemini, OpenAI, Doubao, or Qwen.
 
 ## Pipeline Overview
 
-The workflow is organized as follows:
+The workflow is organized by these step labels:
 
-1. Load client configuration and identify the input type
-2. Fetch topical signals when no concrete topic is provided
-3. Pick a topic angle
-4. Pick an article framework and article archetype
-5. Draft the article with archetype-bound writing rules
-6. Run `5A auto-fix` and `5B editorial QA`
-7. Ask about visuals and generate optional assets
-8. Format, preview, and publish to WeChat drafts
-9. Update history, analytics, and lessons
+1. Step 1: Load client configuration and identify the input type
+2. Step 2: Fetch topical signals when no concrete topic is provided
+3. Step 3: Pick a topic angle
+4. Step 3.5: Pick an article framework and article archetype
+5. Step 4: Draft the article with archetype-bound writing rules
+6. Step 4.5: Run Editorial QA and report repair suggestions
+7. Step 5: Generate the cover image
+8. Step 5.5: Plan and generate inline images
+9. Step 6: Format, preview, and publish to WeChat drafts
+10. Step 7: Update history, analytics, and lessons
 
 The later stages also cover corpus ingestion and playbook refresh when the user asks to feed source material or update the client's writing system.
 

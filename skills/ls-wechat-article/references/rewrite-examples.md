@@ -1,6 +1,6 @@
 # Rewrite Examples
 
-Use these as few-shot rewrite patterns for Step 5A.
+Use these as few-shot rewrite patterns for optional user-requested revision after Step 4.5 QA.
 
 Keep the method.
 Do not copy any specific persona wording.

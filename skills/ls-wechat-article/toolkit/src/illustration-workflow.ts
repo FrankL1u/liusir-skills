@@ -18,6 +18,7 @@ export interface IllustrateOptions {
   output?: string;
   provider?: string;
   style?: string;
+  palette?: string;
   color?: string;
   client?: string;
   targets?: IllustrateTargetInput[];
@@ -55,6 +56,7 @@ interface IllustrationOutlineEntry {
   alt: string;
   inlineType: InlineImageType;
   styleKey?: string | null;
+  negativePrompt?: string;
 }
 
 export interface IllustrateResult {
@@ -72,6 +74,11 @@ export interface IllustrateResult {
 }
 
 const DEFAULT_STYLE = 'follow article tone';
+const GENERATED_INLINE_IMAGE_RE = /^!\[[^\]]*]\((?:\.\/)?assets\/inline-\d+\.(?:png|jpe?g|webp)\)\s*$/i;
+
+export function stripGeneratedInlineImagesFromLines(lines: string[]): string[] {
+  return lines.filter(line => !GENERATED_INLINE_IMAGE_RE.test(line.trim()));
+}
 
 function extractTitle(text: string, inputPath: string): string {
   const title = resolveArticleMetadata(text).title;
@@ -311,7 +318,7 @@ function resolveExplicitTargets(
   lines: string[],
   articleTitle: string,
   explicitTargets: IllustrateTargetInput[] | undefined,
-  opts: Required<Pick<IllustrateOptions, 'style' | 'color'>>,
+  opts: Required<Pick<IllustrateOptions, 'style' | 'color'>> & Pick<IllustrateOptions, 'palette'>,
   imageDir: string,
   markdownDir: string,
   client: string | undefined,
@@ -330,6 +337,7 @@ function resolveExplicitTargets(
       inlineType: explicitTargets?.[index]?.inlineType,
       styleText: opts.style,
       color: opts.color,
+      palette: opts.palette,
       imageSystem,
     });
 
@@ -342,6 +350,7 @@ function resolveExplicitTargets(
       alt: explicitTargets?.[index]?.alt?.trim() || resolvedTarget.positionLabel || `inline-${index + 1}`,
       inlineType: promptSpec.inlineType,
       styleKey: promptSpec.styleKey,
+      negativePrompt: promptSpec.negativePrompt,
     };
   });
 }
@@ -407,7 +416,7 @@ function renderOutlineMarkdown(title: string, targets: IllustrationOutlineEntry[
 export async function illustrateMarkdown(opts: IllustrateOptions): Promise<IllustrateResult> {
   const inputPath = resolve(opts.input);
   const rawText = readFileSync(inputPath, 'utf-8');
-  const lines = rawText.split(/\r?\n/);
+  const lines = stripGeneratedInlineImagesFromLines(rawText.split(/\r?\n/));
   const title = extractTitle(rawText, inputPath);
   const bundle = resolveArticleBundlePathsForInput({
     inputPath,
@@ -433,6 +442,7 @@ export async function illustrateMarkdown(opts: IllustrateOptions): Promise<Illus
     {
       style: opts.style ?? DEFAULT_STYLE,
       color: opts.color ?? '#3498db',
+      palette: opts.palette,
     },
     imageDir,
     dirname(outputPath),
@@ -451,6 +461,7 @@ export async function illustrateMarkdown(opts: IllustrateOptions): Promise<Illus
       fallbackCover: false,
       color: opts.color ?? '#3498db',
       mood: '',
+      negativePrompt: target.negativePrompt,
     });
     if (result.status !== 'ok') {
       throw new Error(`正文图生成失败: ${String(result.message ?? result.status ?? 'unknown error')}`);
