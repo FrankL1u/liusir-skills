@@ -9,9 +9,9 @@
 | `给 demo 写一篇公众号文章` | 走完整流程：选题 -> 框架与原型 -> 标题与写作 -> 质检 -> 封面/正文图 -> 主题 -> 草稿箱 |
 | `把这篇 Markdown 发到草稿箱` | 跳过写作。若你没明确说不要改内容，仍会先做质检诊断再发布 |
 | `用 latepost-depth 主题预览` | 生成本地 HTML 预览 |
-| `看看最近 7 天文章表现` | 读取微信 datacube 数据并回填 `history.yaml` |
-| `根据我的修改学习风格` | 对比草稿与终稿，写入 lessons |
-| `导入参考文章并刷新 playbook` | 读取 `corpus/` 并输出 playbook 分析输入 |
+| `看看最近 7 天文章表现` | 读取微信数据并整理近期表现 |
+| `根据我的修改学习风格` | 对比草稿与终稿，提炼后续写作偏好 |
+| `导入参考文章并刷新写作偏好` | 分析参考文章，更新账号写作习惯 |
 
 ## 安装
 
@@ -23,12 +23,6 @@ pip install -r requirements.txt
 mkdir -p .ls-wechat-article
 cp config.example.yaml .ls-wechat-article/config.yaml
 ```
-
-运行态数据目录按以下顺序解析：
-
-1. `./.ls-wechat-article/`
-2. `~/.liusir-skills/ls-wechat-article/`
-3. 旧的 skill 目录文件只做只读兼容
 
 建议执行一次校验：
 
@@ -83,9 +77,8 @@ trendradar:
 
 说明：
 - TrendRadar 不是写作、排版、预览、发布的必需依赖。
-- 启用后，Step 2 会通过 `scripts/fetch_trendradar_hotspots.py` 合并最近 1 天的新闻和最近 1 天的 RSS 订阅内容。
-- 脚本输出仍然是给下游选题阶段使用的统一 JSON，而不是关键词列表。
-- 如果 TrendRadar 不可用，流程会回退到 `scripts/fetch_hotspots.py`。
+- 启用后，Step 2 会合并最近 1 天的新闻和 RSS 订阅内容。
+- 如果 TrendRadar 不可用，流程会回退到通用热点抓取。
 - 在正式起草新文章前，流程会先搜索一轮最新相关资讯。这个要求只作用于写作流程，不作用于纯排版或纯发布流程。
 
 ## 使用教程
@@ -99,11 +92,11 @@ trendradar:
 | Step 3 | 选择文章选题 |
 | Step 3.5 | 选择框架、文章原型和输出 shape |
 | Step 4 | 先搜索最新相关资讯，再生成标题候选、评分选定 H1，然后按原型约束生成文章草稿 |
-| Step 4.5 | 执行质检，写 `quality-report.md`，反馈修复建议 |
-| Step 5 | 按 `style.yaml.visuals` 生成封面图 |
+| Step 4.5 | 执行质检，反馈修复建议 |
+| Step 5 | 按账号视觉偏好生成封面图 |
 | Step 5.5 | 规划明确的正文图目标，然后生成正文配图 |
 | Step 6 | 决定主题，生成 HTML，预览或发布到草稿箱 |
-| Step 7 | 更新 `history.yaml`，回填 stats，学习改稿，刷新 playbook |
+| Step 7 | 复盘文章表现、学习改稿习惯、更新账号写作偏好 |
 
 ### 2. 风格化说明
 
@@ -114,38 +107,18 @@ trendradar:
 
 #### 图片配置
 
-图片配置只使用 `style.yaml.visuals`。旧字段 `cover_style`、`image_system`、`reference_accounts` 等不再使用。
+首次生成图片时，流程会询问图片范围、整体风格、配色、封面方向和正文图密度。用户可以跳过任意项，跳过时使用默认值。后续默认沿用账号偏好，除非本次明确变更。
 
-```yaml
-visuals:
-  scope: "cover+inline"
-  style: "follow article tone"
-  palette: "default"
-  cover:
-    type: "typography"
-    mood: "balanced"
-    font: "clean"
-    text_level: "title-only"
-    aspect: "2.35:1"
-  inline:
-    density: "balanced"
-    type_default: "auto"
-```
-
-如果 `style.yaml` 没有 `visuals`，首次询问完整视觉配置，然后写入 `visuals`。用户可以跳过任意字段；跳过的字段使用 [visual-prompt-system.md](./references/visual-prompt-system.md) 中的默认值。后续默认按 `visuals` 执行，除非用户本次明确变更。
-
-| 字段 | 可选项 | 默认值 | 说明 |
-|------|--------|--------|------|
-| `visuals.scope` | `cover+inline` / `cover-only` / `inline-only` / `none` | `cover+inline` | 决定生成封面、正文图、两者或都不生成 |
-| `visuals.style` | `follow article tone` / `editorial` / `blueprint` / `notion` / `warm` / `watercolor` / `scientific` / `lofi-doodle` / `multi-panel-manga` / `notebook-sketch` / `claymation` | `follow article tone` | 整篇文章图片的共同视觉方向 |
-| `visuals.palette` | `default` / `macaron` / `mono-ink` / `neon` / `warm` | `default` | 配色方案 |
-| `visuals.cover.type` | `hero` / `conceptual` / `typography` / `metaphor` / `scene` / `minimal` | `typography` | 封面构图类型，默认标题主导 |
-| `visuals.cover.mood` | `subtle` / `balanced` / `bold` | `balanced` | 封面视觉强度 |
-| `visuals.cover.font` | `clean` / `handwritten` / `serif` / `display` | `clean` | 封面字体方向 |
-| `visuals.cover.text_level` | `none` / `title-only` / `title-subtitle` / `text-rich` | `title-only` | 封面文字密度，默认仅标题 |
-| `visuals.cover.aspect` | `2.35:1` | `2.35:1` | 微信封面宽高比 |
-| `visuals.inline.density` | `minimal` / `balanced` / `per-section` / `rich` / `none` | `balanced` | 正文图数量规则，默认 3-5 张 |
-| `visuals.inline.type_default` | `auto` / `infographic` / `scene` / `flowchart` / `comparison` / `framework` / `timeline` | `auto` | 正文图默认类型；`auto` 由 agent 为每个目标显式选型 |
+| 要决定什么 | 可选项 | 默认值 | 说明 |
+|------------|--------|--------|------|
+| 图片范围 | 封面+正文图 / 只生成封面 / 只生成正文图 / 不生成图片 | 封面+正文图 | 决定本次是否需要图片 |
+| 整体图片风格 | 跟随文章基调、杂志信息图、技术蓝图、极简手绘、温暖亲和、水彩柔和、学术图表、多格漫画、笔记本草图、黏土定格等 | 跟随文章基调 | 决定封面和正文图的统一视觉方向 |
+| 配色方案 | 跟随风格、马卡龙、黑白墨线、霓虹、暖调 | 跟随风格 | 控制图片的整体色彩气质 |
+| 封面方向 | 焦点视觉、概念解释、标题主导、隐喻表达、场景氛围、极简留白 | 标题主导 | 决定封面第一眼的表达方式 |
+| 封面强度 | 克制、均衡、强烈 | 均衡 | 决定视觉冲击力 |
+| 封面文字 | 无文字、仅标题、标题+副标题、信息丰富 | 仅标题 | 决定封面上放多少文字 |
+| 正文图密度 | 少量重点图、标准配图、按章节配图、全文覆盖、不生成正文图 | 标准配图 | 默认通常生成 3-5 张正文图 |
+| 正文图类型 | 自动选型、数据图、场景图、流程图、对比图、框架图、时间线 | 自动选型 | 自动选型时，流程会根据每个段落目标选择最合适的图型 |
 
 #### 图片风格说明
 
@@ -233,7 +206,7 @@ visuals:
 
 #### 标题生成规则
 
-Step 4 写正文前会先读取 [seo-rules.md](./references/seo-rules.md)，生成并评分标题候选，再选定一个 H1 写入 `article.md`。
+Step 4 写正文前会先生成并评分标题候选，再选定一个作为文章标题。
 
 标题不是摘要，而是点击理由。候选标题至少要命中一种动机：
 
@@ -255,7 +228,7 @@ Step 4.5 会继续检查标题长度、核心关键词位置、标题承诺是�
 | 先做封面 | 你想先看封面配置或封面计划 | `从 --step 5 开始，先看封面计划` |
 | 先做正文图 | 你想先看正文图目标位置 | `从 --step 5.5 开始，先看正文图目标` |
 | 先做主题与发布 | 你已经有文章，只想确认主题、预览或发布 | `从 --step 6 开始，先告诉我会用什么主题` |
-| 做复盘与学习 | 你想看文章表现、学习人工改稿，或刷新 playbook | `从 --step 7 开始，帮我更新 history、stats 和 lessons` |
+| 做复盘与学习 | 你想看文章表现、学习人工改稿，或更新账号写作偏好 | `从 --step 7 开始，帮我复盘文章表现并学习改稿习惯` |
 
 ## 常用命令
 
@@ -293,46 +266,21 @@ node dist/build-playbook.js --client demo
 
 预览 HTML 会自动把文章同目录下的 `cover.png` / `cover.jpg` / `cover.jpeg` / `cover.webp` 放在正文最顶部；发布到微信草稿箱时不会把这张封面图插进正文。
 发布时如果要使用 Step 5 生成的封面，建议显式传 `--cover cover.png`。如果不传 `--cover`，工具会尝试使用正文第一张图片作为草稿封面。
-`editorial-qa` 会把 `quality-report.md` 写进文章 bundle，让 Step 4.5 的质检判断有明确产物，而不是只留在 agent 口头说明里。
-`illustrate` 默认会把本次文章产物写入 `{runtime_root}/output/{client}/{date}-{title-slug}/`，其中包含 `article.md`、`assets/` 和 `prompts/`。toolkit 不再自己决定该配哪些位置、该用什么图片类型；这些都要由 agent 先选好，再显式传入 `--target`。优先传段落/内容块锚点，旧的标题 target 继续兼容，作为 fallback。
-
-公共视觉 prompt 系统位于 [references/visual-prompt-system.md](./references/visual-prompt-system.md)。运行态 client 数据位于 `{runtime_root}/clients/{client}/style.yaml`，其中 `visuals` 保存该账号的默认视觉配置。
+`editorial-qa` 会输出质检判断和修复建议，让 Step 4.5 的结果可复查。
+`illustrate` 需要先由流程明确正文图位置和图片类型，再生成图片并插入文章。
 
 ## 让文章越写越像这个号
 
 这条链路分成三部分：
 
-1. 喂语料  
-   把历史代表文章、外部高相关案例文、结构参考稿放进 `{runtime_root}/clients/{client}/corpus/`，再运行 `build-playbook`。
+1. 喂参考文章
+   提供历史代表文章、外部高相关案例文、结构参考稿。
 
 2. 改稿学习  
-   文章发布后，如果你人工改过草稿，再运行 `learn-edits`，把草稿和终稿差异写进 `lessons/`。
+   文章发布后，如果你人工改过草稿，流程可以对比修改前后差异，总结你的偏好。
 
-3. 手册刷新  
-   当 `corpus/` 足够丰富，或 `lessons/` 每积累 5 条左右时，重新运行 `build-playbook`，刷新 `playbook.md`。
-
-## 目录结构
-
-```text
-{runtime_root}/clients/demo/
-├── style.yaml
-├── history.yaml
-├── playbook.md
-├── corpus/
-├── lessons/
-└── themes/
-```
-
-这些目录和文件由 [style-template.md](./references/style-template.md) 说明。发布记录会写入 `{runtime_root}/clients/{client}/history.yaml`，改稿学习会写入 `{runtime_root}/clients/{client}/lessons/`，`corpus/` 作为参考语料目录供后续刷新 `playbook.md` 使用。
-
-## 相关文件
-
-- [agents/openai.yaml](./agents/openai.yaml)
-- [scripts/validate_skill.py](./scripts/validate_skill.py)
-- [toolkit/src/image-gen.ts](./toolkit/src/image-gen.ts)
-- [toolkit/src/fetch-stats.ts](./toolkit/src/fetch-stats.ts)
-- [toolkit/src/build-playbook.ts](./toolkit/src/build-playbook.ts)
-- [toolkit/src/learn-edits.ts](./toolkit/src/learn-edits.ts)
+3. 更新写作偏好
+   当参考文章和人工改稿积累到一定数量后，流程会更新后续写作时使用的账号偏好。
 
 ## 许可证
 

@@ -63,12 +63,6 @@ REQUIRED_PACKAGE_SCRIPTS = [
 ]
 
 README_MUST_MENTION = [
-    "agents/openai.yaml",
-    "scripts/validate_skill.py",
-    "image-gen.ts",
-    "fetch-stats.ts",
-    "build-playbook.ts",
-    "learn-edits.ts",
     "npm run validate-skill",
 ]
 
